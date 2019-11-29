@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2019年11月29日 星期五 14时17分30秒
+#   修改日期：2019年11月29日 星期五 17时53分05秒
 #   描    述：
 #
 #================================================================
@@ -23,6 +23,7 @@ c_files += src/ifconfig.cpp
 c_files += src/os_util.cpp
 c_files += src/settings.cpp
 c_files += src/socket_server.cpp
+c_files += src/socket_client.cpp
 
 LOCAL_CFLAGS := -g -O2
 LOCAL_CFLAGS += -Isrc

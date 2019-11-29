@@ -6,7 +6,7 @@
  *   文件名称：os_util.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 14时58分51秒
- *   修改日期：2019年11月28日 星期四 17时19分50秒
+ *   修改日期：2019年11月29日 星期五 17时53分53秒
  *   描    述：
  *
  *================================================================*/
@@ -22,7 +22,13 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#include <string>
+
+#define SOCKET_TXRX_BUFFER_SIZE 4096
+
+typedef enum {
+	TRANS_PROTOCOL_TCP = 0,
+	TRANS_PROTOCOL_UDP,
+} trans_protocol_type_t;
 
 typedef struct
 {
