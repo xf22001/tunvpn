@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2019年11月28日 星期四 17时36分49秒
+ *   修改日期：2019年11月29日 星期五 14时12分56秒
  *   描    述：
  *
  *================================================================*/
@@ -21,12 +21,20 @@ settings *settings::g_settings = NULL;
 
 settings::settings()
 {
-	printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
+	util_log *l = util_log::get_instance();
+	tun = NULL;
+	tap_notifier = NULL;
+	socket_server_notifier = NULL;
+
+	map_clients.clear();
+
+	l->printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
 }
 
 settings::~settings()
 {
-	printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
+	util_log *l = util_log::get_instance();
+	l->printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
 }
 
 settings *settings::get_instance()
@@ -42,9 +50,10 @@ double settings::value_strtod(std::string number)
 {
 	double ret = 0;
 	char *invalid_pos;
+	util_log *l = util_log::get_instance();
 
 	if(number.size() == 0) {
-		printf("parameter not set!!!\n");
+		l->printf("parameter not set!!!\n");
 		exit(1);
 	}
 
@@ -101,8 +110,9 @@ int settings::check_configuration()
 int settings::get_app_settings_from_configuration(configure &cfg)
 {
 	int ret = 0;
-	tap_name = cfg.get("app", "tap_name");
-	ip4_config = cfg.get("app", "ip4_config");
+	tap_name = cfg.get("app", "tap_name").at(0);
+	ip4_config = cfg.get("app", "ip4_config").at(0);
+	server_port = cfg.get("app", "server_port").at(0);
 
 	return ret;
 }
@@ -141,16 +151,12 @@ int settings::parse_args_from_configuration(int argc, char **argv)
 		cfg.p_configure();
 		ret = get_app_settings_from_configuration(cfg);
 	} else {
-		printf("load configuration file failed!!!\n");
+		l->printf("load configuration file failed!!!\n");
 	}
 
 	if(ret == 0) {
 		ret = check_configuration();
 	}
-
-	l->printf("tap_name:%s\n", tap_name.c_str());
-	l->printf("ip4_config:%s\n", ip4_config.c_str());
-
 
 	return ret;
 }

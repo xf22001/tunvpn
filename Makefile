@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2019年11月28日 星期四 17时29分59秒
+#   修改日期：2019年11月29日 星期五 14时17分30秒
 #   描    述：
 #
 #================================================================
@@ -22,6 +22,7 @@ c_files += src/linux_tun.cpp
 c_files += src/ifconfig.cpp
 c_files += src/os_util.cpp
 c_files += src/settings.cpp
+c_files += src/socket_server.cpp
 
 LOCAL_CFLAGS := -g -O2
 LOCAL_CFLAGS += -Isrc
@@ -42,8 +43,8 @@ endif
 LOCAL_LDFLAGS += -L$(top)/c/utils/out/lib
 LOCAL_LDFLAGS += -lcrypto -lssl -lz
 LOCAL_LDFLAGS += -pthread -lrt
-LOCAL_LDFLAGS += -lxiaofei -static
-LOCAL_LDFLAGS += -Wl,-Map=meshvpn.map
+LOCAL_LDFLAGS +=  -Wl,-Bstatic -lxiaofei -Wl,-Bdynamic
+LOCAL_LDFLAGS += -Wl,-Map=$(out_dir)/$(app_name).map
 ifneq ($(PI),)
 LOCAL_DEPS := xiaofei/libssl1.0.0_1.0.1t-1+deb8u12_armhf.deb xiaofei/libc6_2.24-11+deb9u4_armhf.deb xiaofei/libssl-dev_1.0.1t-1+deb8u12_armhf.deb xiaofei/zlib1g-udeb_1.2.8.dfsg-2_armhf.udeb xiaofei/libc6-dev_2.24-11+deb9u4_armhf.deb
 $(LOCAL_DEPS) : 
