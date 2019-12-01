@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2019年12月01日 星期日 17时01分08秒
+ *   修改日期：2019年12月01日 星期日 21时37分07秒
  *   描    述：
  *
  *================================================================*/
@@ -101,7 +101,7 @@ int test_tun()
 
 	ifconfig4(settings->tap_name, settings->ip4_config);
 
-	ret = tun->get_tun_info();
+	ret = tun->update_tun_info();
 
 	start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
 

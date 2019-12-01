@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2019年12月01日 星期日 15时42分43秒
+ *   修改日期：2019年12月01日 星期日 21时59分04秒
  *   描    述：
  *
  *================================================================*/
@@ -63,8 +63,8 @@ public:
 	int chunk_sendto(tun_socket_fn_t fn, void *data, size_t size);
 	void request_parse(char *buffer, int size, char **prequest, int *request_size);
 	void process_message();
-	int send_request(char *request, int size);
-	void request_process(char *request, int request_size);
+	virtual int send_request(char *request, int size);
+	virtual void request_process(char *request, int request_size);
 };
 
 #endif //_TUN_SOCKET_NOTIFIER_H

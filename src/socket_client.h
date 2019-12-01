@@ -1,12 +1,12 @@
 
 
 /*================================================================
- *   
- *   
+ *
+ *
  *   文件名称：socket_client.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分36秒
- *   修改日期：2019年12月01日 星期日 09时35分06秒
+ *   修改日期：2019年12月01日 星期日 21时31分15秒
  *   描    述：
  *
  *================================================================*/
@@ -35,6 +35,7 @@ public:
 	socket_client_notifier(client *c, unsigned int events = POLLIN);
 	virtual ~socket_client_notifier();
 	int handle_event(int fd, unsigned int events);
+	int send_request(char *request, int size);
 	int do_timeout();
 };
 

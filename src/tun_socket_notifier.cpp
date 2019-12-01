@@ -1,12 +1,12 @@
 
 
 /*================================================================
- *   
- *   
+ *
+ *
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月01日 星期日 15时44分46秒
+ *   修改日期：2019年12月01日 星期日 22时15分28秒
  *   描    述：
  *
  *================================================================*/
@@ -18,6 +18,7 @@
 
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
+	rx_buffer_received = 0;
 }
 
 tun_socket_notifier::~tun_socket_notifier()
@@ -39,7 +40,7 @@ unsigned char tun_socket_notifier::calc_crc8(void *data, size_t size)
 	return crc;
 }
 
-int tun_socket_notifier::send_request(char* request, int size)
+int tun_socket_notifier::send_request(char *request, int size)
 {
 	int ret = -1;
 	return ret;
@@ -96,6 +97,7 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 
 void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest, int *request_size)
 {
+	util_log *l = util_log::get_instance();
 	request_t *request = (request_t *)buffer;
 	size_t valid_size = size;
 	size_t payload;
@@ -112,19 +114,23 @@ void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest,
 	max_payload = SOCKET_TXRX_BUFFER_SIZE - sizeof(request_t);
 
 	if(request->header.magic != 0xa5a55a5a) {//无效
+		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 		return;
 	}
 
 	if(request->header.data_size > max_payload) {//无效
+		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 		return;
 	}
 
 	if(request->header.data_size > payload) {//还要收
+		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 		*prequest = (char *)request;
 		return;
 	}
 
 	if(request->header.crc != calc_crc8(((header_info_t *)&request->header) + 1, request->header.data_size + sizeof(payload_info_t))) {//无效
+		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 		*prequest = NULL;
 		return;
 	}
@@ -146,7 +152,7 @@ void tun_socket_notifier::process_message()
 	int left = rx_buffer_received;
 
 	l->printf("net client got %d bytes\n", rx_buffer_received);
-	//l->dump((const char *)rx_buffer, rx_buffer_received);
+	l->dump((const char *)buffer, rx_buffer_received);
 
 	while(left >= (int)sizeof(request_t)) {
 		request_parse(buffer, rx_buffer_received, &request, &request_size);

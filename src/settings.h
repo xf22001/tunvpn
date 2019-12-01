@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2019年12月01日 星期日 16时14分32秒
+ *   修改日期：2019年12月01日 星期日 21时29分00秒
  *   描    述：
  *
  *================================================================*/
@@ -28,6 +28,11 @@ extern "C"
 #include "configure/configure.h"
 #include "linux_tun.h"
 #include "tun_socket_notifier.h"
+
+typedef struct {
+	tun_info_t tun_info;
+	tun_socket_notifier *notifier;
+} peer_info_t;
 
 struct sockaddr_less_then {
 	bool operator() (const struct sockaddr &addr1, const struct sockaddr &addr2) const
@@ -52,13 +57,6 @@ struct sockaddr_less_then {
 	}
 };
 
-typedef struct {
-	unsigned char mac_addr[IFHWADDRLEN];
-	struct sockaddr ip;
-	struct sockaddr netmask;
-	tun_socket_notifier *notifier;
-} peer_info_t;
-
 class settings
 {
 public:
@@ -82,7 +80,7 @@ public:
 	linux_tun *tun;
 	event_notifier *tap_notifier;
 	std::map<int, tun_socket_notifier *> map_notifier;
-	std::map<struct sockaddr, std::vector<tun_socket_notifier *>, sockaddr_less_then > map_clients;
+	std::map<struct sockaddr, std::vector<peer_info_t>, sockaddr_less_then > map_clients;
 
 	double value_strtod(std::string number);
 	int get_time_val(struct timeval *timeval);

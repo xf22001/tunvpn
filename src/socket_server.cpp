@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2019年12月01日 星期日 09时33分18秒
+ *   修改日期：2019年12月01日 星期日 22时03分25秒
  *   描    述：
  *
  *================================================================*/
@@ -40,8 +40,6 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 	int ret = -1;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
-	char buffer[4096] = {0};
-	memset(buffer, 0, 4096);
 
 	if((events ^ get_events()) != 0) {
 		l->printf("error:events:%08x\n", events);
@@ -49,7 +47,7 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 		settings->map_notifier.erase(fd);
 		delete this;
 	} else if((events & get_events()) != 0) {
-		ret = read(fd, buffer, 4096);
+		ret = read(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received);
 
 		if(ret == 0) {
 			l->printf("server read no data, may be client %s closed!\n", m_address.c_str());
@@ -59,16 +57,18 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 			ret = 0;
 		} else if(ret > 0) {
 			l->printf("%8s %d bytes from %s\n", "received", ret, m_address.c_str());
-			//l->dump((const char *)buffer, ret);
-			//ret = write(fd, buffer, ret);
+			//l->dump((const char *)rx_buffer, ret);
+			//ret = write(fd, rx_buffer, ret);
 
 			//if(ret <= 0) {
 			//	l->printf("write %s\n", strerror(errno));
 			//} else {
 			//	l->printf("%8s %d bytes to %s\n", "send", ret, m_address.c_str());
-			//	l->dump((const char *)buffer, ret);
+			//	l->dump((const char *)rx_buffer, ret);
 			//}
 
+			rx_buffer_received += ret;
+			process_message();
 			ret = 0;
 		}
 	} else {
@@ -106,11 +106,6 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 	settings *settings = settings::get_instance();
 	struct sockaddr *address = m_s->get_client_address();
 	socklen_t *addr_size = m_s->get_client_address_size();
-	char buffer[4096] = {0};
-	char addr_buffer[108] = {0};
-
-	memset(addr_buffer, 0, sizeof(addr_buffer));
-	memset(buffer, 0, sizeof(buffer));
 
 	if((events & get_events()) == 0) {
 		l->printf("server:events:%08x\n", events);
@@ -143,7 +138,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 			case SOCK_DGRAM: {
 				std::string client_address;
 
-				ret = recvfrom(fd, buffer, 4096, 0, address, addr_size);
+				ret = recvfrom(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received, 0, address, addr_size);
 				client_address = m_s->get_client_address_string();
 
 				if(ret == 0) {
@@ -151,19 +146,22 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 					//close(fd);
 					//settings->map_notifier.erase(fd);
 					//delete this;
+					//try reconnect~~~
 					ret = 0;
 				} else if(ret > 0) {
 					l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
-					//l->dump((const char *)buffer, ret);
-					//ret = sendto(fd, buffer, ret, 0,  address,  *addr_size);
+					//l->dump((const char *)rx_buffer, ret);
+					//ret = sendto(fd, rx_buffer, ret, 0,  address,  *addr_size);
 
 					//if(ret > 0) {
 					//	l->printf("%8s %d bytes to %s\n", "send", ret, client_address.c_str());
-					//	l->dump((const char *)buffer, ret);
+					//	l->dump((const char *)rx_buffer, ret);
 					//	ret = 0;
 					//} else {
 					//	l->printf("sendto %s %s\n", client_address.c_str(), strerror(errno));
 					//}
+					rx_buffer_received += ret;
+					process_message();
 
 					ret = 0;
 				}
@@ -208,7 +206,7 @@ int start_serve(short server_port, trans_protocol_type_t protocol)
 	settings->map_notifier[s->get_fd()] = notifier;
 
 	ret = 0;
-	
+
 	return ret;
 }
 

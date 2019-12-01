@@ -6,7 +6,7 @@
  *   文件名称：linux_tun.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 11时21分13秒
- *   修改日期：2019年11月29日 星期五 13时02分29秒
+ *   修改日期：2019年12月01日 星期日 21时36分44秒
  *   描    述：
  *
  *================================================================*/
@@ -65,7 +65,7 @@ int linux_tun::tun_ioctl(int fd, int request)
 	return ret;
 }
 
-int linux_tun::get_tun_info()
+int linux_tun::update_tun_info()
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
@@ -94,10 +94,10 @@ int linux_tun::get_tun_info()
 	          (unsigned char)ifr.ifr_hwaddr.sa_data[4],
 	          (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
 
-	memcpy(mac_addr, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
+	memcpy(tun_info.mac_addr, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
 
 	//ip addr
-	sin = (struct sockaddr_in *)&ip_addr;
+	sin = (struct sockaddr_in *)&tun_info.ip;
 	ret = tun_ioctl(sockfd, SIOCGIFADDR);
 
 	if(ret < 0) {
@@ -112,7 +112,7 @@ int linux_tun::get_tun_info()
 	l->printf("ip addr:%s\n", buffer);
 
 	//ip mask
-	sin = (struct sockaddr_in *)&netmask;
+	sin = (struct sockaddr_in *)&tun_info.netmask;
 	ret = tun_ioctl(sockfd, SIOCGIFNETMASK);
 
 	if(ret < 0) {
@@ -187,17 +187,7 @@ int linux_tun::get_tap_fd()
 	return tap_fd;
 }
 
-unsigned char *linux_tun::get_tap_mac()
+tun_info_t *linux_tun::get_tun_info()
 {
-	return mac_addr;
-}
-
-struct sockaddr *linux_tun::get_ip_addr()
-{
-	return &ip_addr;
-}
-
-struct sockaddr *linux_tun::get_netmask()
-{
-	return &netmask;
+	return &tun_info;
 }
