@@ -6,7 +6,7 @@
  *   文件名称：socket_client.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分36秒
- *   修改日期：2019年11月29日 星期五 17时39分01秒
+ *   修改日期：2019年12月01日 星期日 09时35分06秒
  *   描    述：
  *
  *================================================================*/
@@ -22,15 +22,12 @@ extern "C"
 #endif
 
 #include "os_util.h"
-#include "event_loop.h"
+#include "tun_socket_notifier.h"
 #include "net/client.h"
 
-class socket_client_notifier : public event_notifier
+class socket_client_notifier : public tun_socket_notifier
 {
 private:
-	char tx_buffer[SOCKET_TXRX_BUFFER_SIZE];
-	char rx_buffer[SOCKET_TXRX_BUFFER_SIZE];
-
 	client *m_c;
 
 	socket_client_notifier();
@@ -40,5 +37,7 @@ public:
 	int handle_event(int fd, unsigned int events);
 	int do_timeout();
 };
+
+int start_client(std::string server_address, unsigned short server_port, trans_protocol_type_t protocol);
 
 #endif //_SOCKET_CLIENT_H

@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2019年11月29日 星期五 14时12分56秒
+ *   修改日期：2019年12月01日 星期日 16时19分18秒
  *   描    述：
  *
  *================================================================*/
@@ -23,8 +23,6 @@ settings::settings()
 {
 	util_log *l = util_log::get_instance();
 	tun = NULL;
-	tap_notifier = NULL;
-	socket_server_notifier = NULL;
 
 	map_clients.clear();
 
@@ -113,6 +111,7 @@ int settings::get_app_settings_from_configuration(configure &cfg)
 	tap_name = cfg.get("app", "tap_name").at(0);
 	ip4_config = cfg.get("app", "ip4_config").at(0);
 	server_port = cfg.get("app", "server_port").at(0);
+	peer_addr = cfg.get("app", "peer_addr");
 
 	return ret;
 }

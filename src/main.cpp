@@ -6,22 +6,21 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2019年11月29日 星期五 14时06分06秒
+ *   修改日期：2019年12月01日 星期日 17时01分08秒
  *   描    述：
  *
  *================================================================*/
 #include "main.h"
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
 
 #include "util_log.h"
 
 #include "linux_tun.h"
 #include "ifconfig.h"
 #include "settings.h"
+#include "tap_notifier.h"
 #include "socket_server.h"
+#include "socket_client.h"
+#include "regexp/regexp.h"
 
 loop_thread::loop_thread()
 {
@@ -42,42 +41,41 @@ void loop_thread::start()
 	run();
 }
 
-tap_notifier::tap_notifier(int fd, unsigned int events) : event_notifier(fd, events)
+static void start_peer_client(trans_protocol_type_t protocol)
 {
-	add_loop();
-}
-
-tap_notifier::~tap_notifier()
-{
-	remove_loop();
-}
-
-int tap_notifier::handle_event(int fd, unsigned int events)
-{
-	int ret = 0;
+	settings *settings = settings::get_instance();
 	util_log *l = util_log::get_instance();
 
-	if((events ^ get_events()) != 0) {
-		l->printf("events:%08x\n", events);
-		ret = -1;
-		return ret;
+	std::vector<std::string>::iterator it;
+
+	for(it = settings->peer_addr.begin(); it != settings->peer_addr.end(); it++) {
+		std::string ip_port = *it;
+		std::string ip;
+		std::string port;
+		std::vector<std::string> hosts;
+
+		std::vector<std::string> matched_list;
+		std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+		regexp r;
+
+		matched_list = r.match(ip_port, pattern);
+
+		if(matched_list.size() != 3) {
+			continue;
+		}
+
+		ip = matched_list.at(1);
+		port = matched_list.at(2);
+		l->printf("ip:%s, port:%s\n", ip.c_str(), port.c_str());
+
+		hosts = get_host_by_name(ip);
+		if(hosts.empty()) {
+			continue;
+		}
+		
+		ip = hosts.at(0);
+		start_client(ip, settings->value_strtod(port), protocol);
 	}
-
-	ret = read(fd, buffer, TAP_DATA_BUFFER_SIZE);
-
-	if(ret > 0) {
-		//l->dump((const char *)buffer, ret);
-		//ret = write(fd, buffer, ret);
-
-		//if(ret < 0) {
-		//	l->printf("write tap device error!(%s)\n", strerror(errno));
-		//}
-	} else {
-		l->printf("read tap device error!(%s)\n", strerror(errno));
-	}
-
-
-	return ret;
 }
 
 int test_tun()
@@ -105,9 +103,11 @@ int test_tun()
 
 	ret = tun->get_tun_info();
 
-	settings->socket_server_notifier = start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
-	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
+	start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
 
+	start_peer_client(TRANS_PROTOCOL_UDP);
+
+	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
 
 	return ret;
 }

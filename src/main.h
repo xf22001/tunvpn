@@ -6,7 +6,7 @@
  *   文件名称：main.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时50分15秒
- *   修改日期：2019年11月28日 星期四 15时52分01秒
+ *   修改日期：2019年12月01日 星期日 09时31分18秒
  *   描    述：
  *
  *================================================================*/
@@ -22,9 +22,7 @@ extern "C"
 #endif
 
 #include "thread.h"
-#include "event_loop.h"
-
-#define TAP_DATA_BUFFER_SIZE 4096
+#include "tun_socket_notifier.h"
 
 class loop_thread : public thread
 {
@@ -33,17 +31,6 @@ public:
 	~loop_thread();
 	void func();
 	void start();
-};
-
-class tap_notifier : public event_notifier
-{
-private:
-	char buffer[TAP_DATA_BUFFER_SIZE];
-	tap_notifier();
-public:
-	tap_notifier(int fd, unsigned int events = POLLIN);
-	virtual ~tap_notifier();
-	int handle_event(int fd, unsigned int events);
 };
 
 #endif //_MAIN_H
