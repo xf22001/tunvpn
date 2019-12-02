@@ -6,19 +6,25 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月01日 星期日 22时15分28秒
+ *   修改日期：2019年12月02日 星期一 14时03分30秒
  *   描    述：
  *
  *================================================================*/
 #include "tun_socket_notifier.h"
 
 #include <string.h>
+#include <fcntl.h>
 
 #include "util_log.h"
 
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
+	int flags;
 	rx_buffer_received = 0;
+
+	flags = fcntl(fd, F_GETFL, 0);
+	flags |= O_NONBLOCK;
+	flags = fcntl(fd, F_SETFL, flags);
 }
 
 tun_socket_notifier::~tun_socket_notifier()
@@ -40,13 +46,15 @@ unsigned char tun_socket_notifier::calc_crc8(void *data, size_t size)
 	return crc;
 }
 
-int tun_socket_notifier::send_request(char *request, int size)
+int tun_socket_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
 {
 	int ret = -1;
+	util_log *l = util_log::get_instance();
+	l->printf("invalid request process!\n");
 	return ret;
 }
 
-int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t size)
+int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t addr_size)
 {
 	size_t ret = 0;
 	char *p = (char *)data;
@@ -66,7 +74,7 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 		int send_size = len + head_size;
 		int count;
 
-		request->header.magic = 0xa5a55a5a;
+		request->header.magic = DEFAULT_REQUEST_MAGIC;
 		request->header.total_size = size;
 		request->header.data_offset = sent;
 		request->header.data_size = len;
@@ -77,7 +85,7 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 
 		request->header.crc = calc_crc8(((header_info_t *)&request->header) + 1, len + sizeof(payload_info_t));
 
-		count = send_request((char *)request, send_size);
+		count = send_request((char *)request, send_size, address, addr_size);
 
 		if(count == send_size) {
 			sent += len;
@@ -113,24 +121,28 @@ void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest,
 	payload = valid_size - sizeof(request_t);
 	max_payload = SOCKET_TXRX_BUFFER_SIZE - sizeof(request_t);
 
-	if(request->header.magic != 0xa5a55a5a) {//无效
-		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+	if(request->header.magic != DEFAULT_REQUEST_MAGIC) {//无效
+		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		l->printf("magic invalid!\n");
 		return;
 	}
 
 	if(request->header.data_size > max_payload) {//无效
-		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		l->printf("size > max_payload invalid!\n");
 		return;
 	}
 
 	if(request->header.data_size > payload) {//还要收
-		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		l->printf("size > payload invalid!\n");
 		*prequest = (char *)request;
 		return;
 	}
 
 	if(request->header.crc != calc_crc8(((header_info_t *)&request->header) + 1, request->header.data_size + sizeof(payload_info_t))) {//无效
-		l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+		l->printf("crc invalid!\n");
 		*prequest = NULL;
 		return;
 	}
@@ -139,27 +151,30 @@ void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest,
 	*request_size = request->header.data_size + sizeof(request_t);
 }
 
-void tun_socket_notifier::request_process(char *request, int request_size)
+void tun_socket_notifier::request_process(request_t *request)
 {
+	util_log *l = util_log::get_instance();
+	l->printf("invalid request process!\n");
 }
 
 void tun_socket_notifier::process_message()
 {
 	char *request = NULL;
 	char *buffer = rx_buffer;
-	util_log *l = util_log::get_instance();
+	//util_log *l = util_log::get_instance();
 	int request_size = 0;
 	int left = rx_buffer_received;
 
-	l->printf("net client got %d bytes\n", rx_buffer_received);
-	l->dump((const char *)buffer, rx_buffer_received);
+	//l->printf("net client got %d bytes\n", rx_buffer_received);
+	//l->dump((const char *)rx_buffer, rx_buffer_received);
 
 	while(left >= (int)sizeof(request_t)) {
 		request_parse(buffer, rx_buffer_received, &request, &request_size);
+		//l->printf("request_size %d bytes\n", request_size);
 
 		if(request != NULL) {//可能有效包
 			if(request_size != 0) {//有效包
-				request_process(request, request_size);
+				request_process((request_t *)request);
 				buffer += request_size;
 				left -= request_size;
 			} else {//还要收,退出包处理
@@ -170,8 +185,7 @@ void tun_socket_notifier::process_message()
 			left -= 1;
 		}
 
-		l->printf("request_size %d bytes\n", request_size);
-		l->printf("left %d bytes\n", left);
+		//l->printf("left %d bytes\n", left);
 	}
 
 	if(left > 0) {
@@ -181,4 +195,36 @@ void tun_socket_notifier::process_message()
 	}
 
 	rx_buffer_received = left;
+}
+
+int tun_socket_notifier::encrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size)
+{
+	int ret = 0;
+	int i;
+	unsigned char mask = 0xff;
+
+	for(i = 0; i < in_size; i++) {
+		*out_data = *in_data ^ mask;
+		in_data++;
+		out_data++;
+	}
+
+	*out_size = in_size;
+	return ret;
+}
+
+int tun_socket_notifier::decrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size)
+{
+	int ret = 0;
+	int i;
+	unsigned char mask = 0xff;
+
+	for(i = 0; i < in_size; i++) {
+		*out_data = *in_data ^ mask;
+		in_data++;
+		out_data++;
+	}
+
+	*out_size = in_size;
+	return ret;
 }

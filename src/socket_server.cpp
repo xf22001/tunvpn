@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2019年12月01日 星期日 22时03分25秒
+ *   修改日期：2019年12月02日 星期一 14时37分39秒
  *   描    述：
  *
  *================================================================*/
@@ -56,7 +56,8 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 			delete this;
 			ret = 0;
 		} else if(ret > 0) {
-			l->printf("%8s %d bytes from %s\n", "received", ret, m_address.c_str());
+			//l->printf("%8s %d bytes from %s\n", "received", ret, m_address.c_str());
+			decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 			//l->dump((const char *)rx_buffer, ret);
 			//ret = write(fd, rx_buffer, ret);
 
@@ -149,7 +150,8 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 					//try reconnect~~~
 					ret = 0;
 				} else if(ret > 0) {
-					l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
+					//l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
+					decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 					//l->dump((const char *)rx_buffer, ret);
 					//ret = sendto(fd, rx_buffer, ret, 0,  address,  *addr_size);
 
@@ -175,6 +177,99 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 	}
 
 	return ret;
+}
+
+int socket_server_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
+{
+	util_log *l = util_log::get_instance();
+	struct sockaddr_in *sin = (struct sockaddr_in *)address;
+	char buffer[32];
+	int ret = -1;
+
+	inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
+
+	switch(m_s->get_type()) {
+		case SOCK_STREAM: {
+			ret = write(m_s->get_fd(), request, size);
+		}
+		break;
+
+		case SOCK_DGRAM: {
+			ret = sendto(m_s->get_fd(), request, size, 0, address, addr_size);
+		}
+		break;
+
+		default:
+			break;
+	}
+
+	if(ret > 0) {
+		//l->printf("%8s %d bytes to %s:%d\n", "send", ret, buffer, htons(sin->sin_port));
+	} else {
+		l->printf("sendto %s:%d %s\n", buffer, htons(sin->sin_port), strerror(errno));
+	}
+
+	return ret;
+}
+
+void socket_server_notifier::request_process(request_t *request)
+{
+	tun_socket_fn_t fn = request->payload.fn;
+	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
+
+	switch(fn) {
+		case FN_HELLO: {
+			char buffer[32];
+			tun_info_t *tun_info = (tun_info_t *)(request + 1);
+			struct sockaddr_in *sin;
+			peer_info_t peer_info;
+			struct sockaddr client_address = *m_s->get_client_address();
+
+			peer_info.tun_info = *tun_info;
+			peer_info.notifier = this;
+
+			settings->map_clients.erase(client_address);
+			settings->map_clients[client_address] = peer_info;
+
+			//l->printf("client addr:%s\n", m_s->get_client_address_string().c_str());
+
+			//l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
+
+			sin = (struct sockaddr_in *)&tun_info->ip;
+			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+			//l->printf("ip addr:%s\n", buffer);
+
+			sin = (struct sockaddr_in *)&tun_info->netmask;
+			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+			//l->printf("netmask:%s\n", buffer);
+
+			if(settings->tun != NULL) {
+				int ret = chunk_sendto(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_s->get_client_address(), *m_s->get_client_address_size());
+
+				if(ret <= 0) {
+				}
+			}
+		}
+		break;
+
+		case FN_FRAME: {
+			char *frame = (char *)(request + 1);
+			int size = request->header.data_size;
+
+			int ret = write(settings->tun->get_tap_fd(), frame, size);
+
+			if(ret < 0) {
+				l->printf("write tap device error!(%s)\n", strerror(errno));
+			}
+		}
+		break;
+
+		default: {
+		}
+		break;
+	}
 }
 
 int start_serve(short server_port, trans_protocol_type_t protocol)

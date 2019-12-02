@@ -6,7 +6,7 @@
  *   文件名称：socket_server.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分31秒
- *   修改日期：2019年12月01日 星期日 09时33分41秒
+ *   修改日期：2019年12月02日 星期一 10时52分13秒
  *   描    述：
  *
  *================================================================*/
@@ -44,12 +44,13 @@ class socket_server_notifier : public tun_socket_notifier
 private:
 	server *m_s;
 	socket_server_notifier();
-	char tx_buffer[SOCKET_TXRX_BUFFER_SIZE];
-	char rx_buffer[SOCKET_TXRX_BUFFER_SIZE];
+
 public:
 	socket_server_notifier(server *s, unsigned int events = POLLIN);
 	virtual ~socket_server_notifier();
 	int handle_event(int fd, unsigned int events);
+	void request_process(request_t *request);
+	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
 };
 
 int start_serve(short server_port, trans_protocol_type_t protocol);

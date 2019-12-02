@@ -6,7 +6,7 @@
  *   文件名称：linux_tun.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 11时21分13秒
- *   修改日期：2019年12月01日 星期日 21时36分44秒
+ *   修改日期：2019年12月02日 星期一 14时48分41秒
  *   描    述：
  *
  *================================================================*/
@@ -143,6 +143,7 @@ int linux_tun::open_tun(std::string request_name)
 	util_log *l = util_log::get_instance();
 	std::string tun_device = "/dev/net/tun";
 	int ret = -1;
+	int flags;
 
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
@@ -163,6 +164,11 @@ int linux_tun::open_tun(std::string request_name)
 	}
 
 	tap_name = ifr.ifr_name;
+
+	flags = fcntl(tap_fd, F_GETFL, 0);
+	flags |= O_NONBLOCK;
+	flags = fcntl(tap_fd, F_SETFL, flags);
+
 
 	ret = 0;
 

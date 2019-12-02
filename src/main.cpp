@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2019年12月01日 星期日 21时37分07秒
+ *   修改日期：2019年12月02日 星期一 13时23分57秒
  *   描    述：
  *
  *================================================================*/
@@ -20,6 +20,7 @@
 #include "tap_notifier.h"
 #include "socket_server.h"
 #include "socket_client.h"
+#include "console.h"
 #include "regexp/regexp.h"
 
 loop_thread::loop_thread()
@@ -108,6 +109,7 @@ int test_tun()
 	start_peer_client(TRANS_PROTOCOL_UDP);
 
 	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
+	settings->input_notifier = new input_notifier(0, POLLIN);
 
 	return ret;
 }
