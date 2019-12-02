@@ -6,7 +6,7 @@
  *   文件名称：tap_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月01日 星期日 09时29分18秒
- *   修改日期：2019年12月02日 星期一 14时33分26秒
+ *   修改日期：2019年12月02日 星期一 17时29分05秒
  *   描    述：
  *
  *================================================================*/
@@ -23,12 +23,6 @@
 
 tap_notifier::tap_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
-	int flags;
-
-	flags = fcntl(fd, F_GETFL, 0);
-	flags |= O_NONBLOCK;
-	flags = fcntl(fd, F_SETFL, flags);
-
 	add_loop();
 }
 
@@ -70,29 +64,29 @@ int tap_notifier::handle_event(int fd, unsigned int events)
 int tap_notifier::send_tun_frame(char *frame, int size)
 {
 	int ret = -1;
-	util_log *l = util_log::get_instance();
+	//util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	unsigned char dest_mac_addr[IFHWADDRLEN];
 	struct sockaddr dest_addr;
 	peer_info_t *peer_info;
-	struct sockaddr_in *sin;
+	//struct sockaddr_in *sin;
 	std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
-	char buffer[32];
-	char buffer_mac[32];
-	unsigned char *mac_data = (unsigned char *)frame;
+	//char buffer[32];
+	//char buffer_mac[32];
+	//unsigned char *mac_data = (unsigned char *)frame;
 	int found = 0;
 
 	if(settings->map_clients.size() == 0) {
 		return ret;
 	}
 
-	snprintf(buffer_mac, 32, "%02x:%02x:%02x:%02x:%02x:%02x",
-	         mac_data[0],
-	         mac_data[1],
-	         mac_data[2],
-	         mac_data[3],
-	         mac_data[4],
-	         mac_data[5]);
+	//snprintf(buffer_mac, 32, "%02x:%02x:%02x:%02x:%02x:%02x",
+	//         mac_data[0],
+	//         mac_data[1],
+	//         mac_data[2],
+	//         mac_data[3],
+	//         mac_data[4],
+	//         mac_data[5]);
 
 	memcpy(dest_mac_addr, frame, IFHWADDRLEN);
 
@@ -100,11 +94,11 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 		dest_addr = it->first;
 		peer_info = &it->second;
 
-		sin = (struct sockaddr_in *)&dest_addr;
-		inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+		//sin = (struct sockaddr_in *)&dest_addr;
+		//inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
 		if(memcmp(dest_mac_addr, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
-			l->printf("send fram to %s, frame mac:%s\n", buffer, buffer_mac);
+			//l->printf("send fram to %s, frame mac:%s\n", buffer, buffer_mac);
 			ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
 			found = 1;
 			break;
@@ -120,10 +114,10 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 		dest_addr = it->first;
 		peer_info = &it->second;
 
-		sin = (struct sockaddr_in *)&dest_addr;
-		inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+		//sin = (struct sockaddr_in *)&dest_addr;
+		//inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
-		l->printf("broadcast fram to %s, fram mac:%s\n", buffer, buffer_mac);
+		//l->printf("broadcast fram to %s, fram mac:%s\n", buffer, buffer_mac);
 
 		ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
 	}

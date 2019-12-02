@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2019年12月02日 星期一 14时37分39秒
+ *   修改日期：2019年12月02日 星期一 17时31分45秒
  *   描    述：
  *
  *================================================================*/
@@ -243,6 +243,7 @@ void socket_server_notifier::request_process(request_t *request)
 
 			sin = (struct sockaddr_in *)&tun_info->netmask;
 			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+
 			//l->printf("netmask:%s\n", buffer);
 
 			if(settings->tun != NULL) {
@@ -257,8 +258,28 @@ void socket_server_notifier::request_process(request_t *request)
 		case FN_FRAME: {
 			char *frame = (char *)(request + 1);
 			int size = request->header.data_size;
+			int ret = -1;
 
-			int ret = write(settings->tun->get_tap_fd(), frame, size);
+			if(request->header.data_size != request->header.total_size) {
+				if(request->header.data_offset == 0) {
+					rx_seq = request->payload.seq;
+				} else {
+					if(rx_seq != request->payload.seq) {
+						//l->printf("drop packet %d!\n", request->payload.seq);
+						break;
+					}
+				}
+
+				memcpy(rx_reqest + request->header.data_offset, frame, size);
+
+				if(request->header.data_offset + request->header.data_size == request->header.total_size) {
+					ret = write(settings->tun->get_tap_fd(), rx_reqest, request->header.total_size);
+				} else {
+					break;
+				}
+			} else {
+				ret = write(settings->tun->get_tap_fd(), frame, size);
+			}
 
 			if(ret < 0) {
 				l->printf("write tap device error!(%s)\n", strerror(errno));

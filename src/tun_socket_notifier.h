@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2019年12月02日 星期一 10时37分36秒
+ *   修改日期：2019年12月02日 星期一 17时25分37秒
  *   描    述：
  *
  *================================================================*/
@@ -28,6 +28,8 @@ extern "C"
 #include "os_util.h"
 #include "event_loop.h"
 
+#define MAX_REQUEST_PACKET_SIZE 1300
+
 #define DEFAULT_REQUEST_MAGIC 0xa5a55a5a
 
 typedef enum {
@@ -45,7 +47,7 @@ typedef struct {
 
 typedef struct {
 	tun_socket_fn_t fn;
-	unsigned int stage;
+	unsigned int seq;
 } payload_info_t;
 
 typedef struct {
@@ -59,6 +61,10 @@ private:
 	tun_socket_notifier();
 
 protected:
+	static unsigned int tx_seq;
+	static unsigned int rx_seq;
+
+	char rx_reqest[MAX_REQUEST_PACKET_SIZE];
 	char tx_buffer[SOCKET_TXRX_BUFFER_SIZE];
 	char rx_buffer[SOCKET_TXRX_BUFFER_SIZE];
 	int rx_buffer_received;

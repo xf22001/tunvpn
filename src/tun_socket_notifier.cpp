@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月02日 星期一 14时03分30秒
+ *   修改日期：2019年12月02日 星期一 17时28分32秒
  *   描    述：
  *
  *================================================================*/
@@ -17,14 +17,17 @@
 
 #include "util_log.h"
 
+unsigned int tun_socket_notifier::rx_seq = 0;
+unsigned int tun_socket_notifier::tx_seq = 0;
+
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
-	int flags;
+	//int flags;
 	rx_buffer_received = 0;
 
-	flags = fcntl(fd, F_GETFL, 0);
-	flags |= O_NONBLOCK;
-	flags = fcntl(fd, F_SETFL, flags);
+	//flags = fcntl(fd, F_GETFL, 0);
+	//flags |= O_NONBLOCK;
+	//flags = fcntl(fd, F_SETFL, flags);
 }
 
 tun_socket_notifier::~tun_socket_notifier()
@@ -60,7 +63,8 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 	char *p = (char *)data;
 	size_t sent = 0;
 	size_t head_size = sizeof(request_t);
-	size_t payload = SOCKET_TXRX_BUFFER_SIZE - head_size;
+	size_t payload = MAX_REQUEST_PACKET_SIZE - head_size;
+	//util_log *l = util_log::get_instance();
 
 	if(data == NULL) {
 		ret = -1;
@@ -80,11 +84,12 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 		request->header.data_size = len;
 
 		request->payload.fn = fn;
-		request->payload.stage = 0;
+		request->payload.seq = tx_seq;
 		memcpy(request + 1, p + sent, len);
 
 		request->header.crc = calc_crc8(((header_info_t *)&request->header) + 1, len + sizeof(payload_info_t));
 
+		//l->printf("send_request:%d!\n", send_size);
 		count = send_request((char *)request, send_size, address, addr_size);
 
 		if(count == send_size) {
@@ -97,6 +102,7 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 
 	if(ret == 0) {
 		ret = sent;
+		tx_seq++;
 	}
 
 	return ret;
@@ -170,7 +176,7 @@ void tun_socket_notifier::process_message()
 
 	while(left >= (int)sizeof(request_t)) {
 		request_parse(buffer, rx_buffer_received, &request, &request_size);
-		//l->printf("request_size %d bytes\n", request_size);
+		//l->printf("got request_size %d\n", request_size);
 
 		if(request != NULL) {//可能有效包
 			if(request_size != 0) {//有效包
