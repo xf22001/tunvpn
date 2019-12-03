@@ -6,7 +6,7 @@
  *   文件名称：socket_server.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分31秒
- *   修改日期：2019年12月03日 星期二 08时51分33秒
+ *   修改日期：2019年12月03日 星期二 09时15分33秒
  *   描    述：
  *
  *================================================================*/
@@ -29,14 +29,19 @@ extern "C"
 class socket_server_client_notifier : public tun_socket_notifier
 {
 private:
-	std::string m_address;
+	int m_fd;
+	std::string m_address_string;
+	struct sockaddr m_address;
 	socket_server_client_notifier();
 
 public:
-	socket_server_client_notifier(std::string client_address, int fd, unsigned int events = POLLIN);
+	socket_server_client_notifier(struct sockaddr *sockaddr, std::string client_address, int fd, unsigned int events = POLLIN);
 	virtual ~socket_server_client_notifier();
 	int handle_event(int fd, unsigned int events);
-	std::string get_client_address_string();
+	std::string get_request_address_string();
+	struct sockaddr *get_request_address();
+	void reply_tun_info();
+	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
 };
 
 class socket_server_notifier : public tun_socket_notifier
