@@ -6,7 +6,7 @@
  *   文件名称：console.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月02日 星期一 12时49分52秒
- *   修改日期：2019年12月02日 星期一 13时34分49秒
+ *   修改日期：2019年12月03日 星期二 15时03分52秒
  *   描    述：
  *
  *================================================================*/
@@ -57,7 +57,7 @@ void input_notifier::process_message(int size)
 	ret = sscanf(input_buffer, "%d%n", &fn, &catched);
 
 	if(ret == 1) {
-		l->printf("fn:%d\n", fn);
+		//l->printf("fn:%d\n", fn);
 
 		switch(fn) {
 			case 0: {

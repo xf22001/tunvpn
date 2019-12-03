@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2019年12月03日 星期二 14时05分14秒
+ *   修改日期：2019年12月03日 星期二 15时29分52秒
  *   描    述：
  *
  *================================================================*/
@@ -37,7 +37,7 @@ typedef struct {
 } peer_info_t;
 
 struct sockaddr_less_then {
-	bool operator() (const struct sockaddr addr1, const struct sockaddr addr2) const
+	bool operator() (const struct sockaddr &addr1, const struct sockaddr &addr2) const
 	{
 		bool ret = false;
 		struct sockaddr_in *in1 = (struct sockaddr_in *)&addr1;

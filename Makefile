@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2019年12月03日 星期二 10时56分48秒
+#   修改日期：2019年12月03日 星期二 16时02分04秒
 #   描    述：
 #
 #================================================================
@@ -47,7 +47,7 @@ endif
 ifeq ($(PI),)
 LOCAL_LDFLAGS += -L$(top)/c/utils/out/lib
 endif
-LOCAL_LDFLAGS += -lcrypto -lssl -lz
+#LOCAL_LDFLAGS += -lcrypto -lssl -lz
 LOCAL_LDFLAGS += -pthread -lrt
 LOCAL_LDFLAGS +=  -Wl,-Bstatic -lxiaofei -Wl,-Bdynamic
 LOCAL_LDFLAGS += -Wl,-Map=$(out_dir)/$(app_name).map

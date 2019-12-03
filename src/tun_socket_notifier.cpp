@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月03日 星期二 14时26分39秒
+ *   修改日期：2019年12月03日 星期二 16时13分18秒
  *   描    述：
  *
  *================================================================*/
@@ -186,27 +186,49 @@ void tun_socket_notifier::request_process(request_t *request)
 			struct sockaddr_in *sin;
 			peer_info_t peer_info;
 			struct sockaddr client_address = *get_request_address();
+			std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+			bool log = false;
 
 			peer_info.tun_info = *tun_info;
 			peer_info.notifier = this;
 			peer_info.time = time(NULL);
 
-			settings->map_clients.erase(client_address);
+			it = settings->map_clients.find(client_address);
+
+			if(it == settings->map_clients.end()) {
+				log = true;
+			} else {
+				struct sockaddr_in *sin1 = (struct sockaddr_in *)&it->first;
+				struct sockaddr_in *sin2 = (struct sockaddr_in *)&client_address;
+
+				if(memcmp(sin1, sin2, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr)) != 0) {
+					l->dump((const char *)sin1, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr));
+					l->dump((const char *)sin2, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr));
+					log = true;
+				}
+
+				settings->map_clients.erase(it);
+			}
+
 			settings->map_clients[client_address] = peer_info;
-
-			//l->printf("server addr:%s\n", m_c->get_server_address_string().c_str());
-
-			//l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
-
-			sin = (struct sockaddr_in *)&tun_info->ip;
-			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
-			//l->printf("ip addr:%s\n", buffer);
-
-			sin = (struct sockaddr_in *)&tun_info->netmask;
-			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
-			//l->printf("netmask:%s\n", buffer);
-
 			reply_tun_info();
+
+			if(log) {
+				l->printf("update client!\n");
+				sin = (struct sockaddr_in *)&client_address;
+				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+				l->printf("client_address:%s\n", buffer);
+
+				l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
+
+				sin = (struct sockaddr_in *)&tun_info->ip;
+				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+				l->printf("ip addr:%s\n", buffer);
+
+				sin = (struct sockaddr_in *)&tun_info->netmask;
+				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+				l->printf("netmask:%s\n", buffer);
+			}
 		}
 		break;
 
@@ -311,7 +333,10 @@ int tun_socket_notifier::decrypt_request(unsigned char *in_data, int in_size, un
 void tun_socket_notifier::check_client()
 {
 	settings *settings = settings::get_instance();
+	util_log *l = util_log::get_instance();
 	std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+	std::vector<struct sockaddr> invalid_address;
+	std::vector<struct sockaddr>::iterator it_address;
 	peer_info_t peer_info;
 	struct sockaddr address;
 	time_t current_time = time(NULL);
@@ -321,7 +346,19 @@ void tun_socket_notifier::check_client()
 		peer_info = it->second;
 
 		if(current_time - peer_info.time >= 10) {
-			settings->map_clients.erase(address);
+			invalid_address.push_back(address);
 		}
+	}
+
+	for(it_address = invalid_address.begin(); it_address != invalid_address.end(); it_address++) {
+		char buffer[32];
+		struct sockaddr_in *sin;
+
+		settings->map_clients.erase(address);
+
+		sin = (struct sockaddr_in *)&address;
+		inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+
+		l->printf("remove inactive client:%s!\n", buffer);
 	}
 }
