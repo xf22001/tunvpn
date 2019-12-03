@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2019年12月01日 星期日 16时19分18秒
+ *   修改日期：2019年12月03日 星期二 10时22分24秒
  *   描    述：
  *
  *================================================================*/
@@ -108,10 +108,28 @@ int settings::check_configuration()
 int settings::get_app_settings_from_configuration(configure &cfg)
 {
 	int ret = 0;
-	tap_name = cfg.get("app", "tap_name").at(0);
-	ip4_config = cfg.get("app", "ip4_config").at(0);
-	server_port = cfg.get("app", "server_port").at(0);
-	peer_addr = cfg.get("app", "peer_addr");
+
+	std::vector<std::string> values;
+
+	values = cfg.get("app", "tap_name");
+	if(values.size() > 0) {
+		tap_name = values.at(0);
+	}
+
+	values = cfg.get("app", "ip4_config");
+	if(values.size() > 0) {
+		ip4_config = values.at(0);
+	}
+
+	values = cfg.get("app", "server_port");
+	if(values.size() > 0) {
+		server_port = values.at(0);
+	}
+
+	values = cfg.get("app", "peer_addr");
+	if(values.size() > 0) {
+		peer_addr = values;
+	}
 
 	return ret;
 }

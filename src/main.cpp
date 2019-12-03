@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2019年12月02日 星期一 13时23分57秒
+ *   修改日期：2019年12月03日 星期二 10时23分12秒
  *   描    述：
  *
  *================================================================*/
@@ -70,10 +70,11 @@ static void start_peer_client(trans_protocol_type_t protocol)
 		l->printf("ip:%s, port:%s\n", ip.c_str(), port.c_str());
 
 		hosts = get_host_by_name(ip);
+
 		if(hosts.empty()) {
 			continue;
 		}
-		
+
 		ip = hosts.at(0);
 		start_client(ip, settings->value_strtod(port), protocol);
 	}
@@ -104,9 +105,13 @@ int test_tun()
 
 	ret = tun->update_tun_info();
 
-	start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
+	if(settings->server_port.size() > 0) {
+		start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
+	}
 
-	start_peer_client(TRANS_PROTOCOL_UDP);
+	if(settings->peer_addr.size() > 0) {
+		start_peer_client(TRANS_PROTOCOL_UDP);
+	}
 
 	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
 	settings->input_notifier = new input_notifier(0, POLLIN);

@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2019年12月02日 星期一 13时12分01秒
+#   修改日期：2019年12月03日 星期二 10时56分48秒
 #   描    述：
 #
 #================================================================
@@ -39,12 +39,14 @@ endif
 LOCAL_LDFLAGS := 
 ifneq ($(PI),)
 LOCAL_LDFLAGS += --sysroot=xiaofei/sysroot
-LOCAL_LDFLAGS += -Lxiaofei/sysroot/lib
-LOCAL_LDFLAGS += -Lxiaofei/sysroot/lib/arm-linux-gnueabihf
-LOCAL_LDFLAGS += -Lxiaofei/sysroot/usr/lib
-LOCAL_LDFLAGS += -Lxiaofei/sysroot/usr/lib/arm-linux-gnueabihf
+#LOCAL_LDFLAGS += -Lxiaofei/sysroot/lib
+#LOCAL_LDFLAGS += -Lxiaofei/sysroot/lib/arm-linux-gnueabihf
+#LOCAL_LDFLAGS += -Lxiaofei/sysroot/usr/lib
+#LOCAL_LDFLAGS += -Lxiaofei/sysroot/usr/lib/arm-linux-gnueabihf
 endif
+ifeq ($(PI),)
 LOCAL_LDFLAGS += -L$(top)/c/utils/out/lib
+endif
 LOCAL_LDFLAGS += -lcrypto -lssl -lz
 LOCAL_LDFLAGS += -pthread -lrt
 LOCAL_LDFLAGS +=  -Wl,-Bstatic -lxiaofei -Wl,-Bdynamic
