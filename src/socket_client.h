@@ -6,7 +6,7 @@
  *   文件名称：socket_client.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分36秒
- *   修改日期：2019年12月02日 星期一 11时18分38秒
+ *   修改日期：2019年12月03日 星期二 08时51分22秒
  *   描    述：
  *
  *================================================================*/
@@ -36,7 +36,8 @@ public:
 	virtual ~socket_client_notifier();
 	int handle_event(int fd, unsigned int events);
 	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
-	void request_process(request_t *request);
+	struct sockaddr *get_request_address();
+	void reply_tun_info();
 	int do_timeout();
 };
 

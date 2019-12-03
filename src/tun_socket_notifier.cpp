@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月02日 星期一 17时28分32秒
+ *   修改日期：2019年12月03日 星期二 08时54分26秒
  *   描    述：
  *
  *================================================================*/
@@ -14,8 +14,10 @@
 
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "util_log.h"
+#include "settings.h"
 
 unsigned int tun_socket_notifier::rx_seq = 0;
 unsigned int tun_socket_notifier::tx_seq = 0;
@@ -53,7 +55,7 @@ int tun_socket_notifier::send_request(char *request, int size, struct sockaddr *
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
-	l->printf("invalid request process!\n");
+	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
 	return ret;
 }
 
@@ -157,10 +159,92 @@ void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest,
 	*request_size = request->header.data_size + sizeof(request_t);
 }
 
-void tun_socket_notifier::request_process(request_t *request)
+
+struct sockaddr *tun_socket_notifier::get_request_address()
 {
 	util_log *l = util_log::get_instance();
-	l->printf("invalid request process!\n");
+	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
+	return NULL;
+}
+
+void tun_socket_notifier::reply_tun_info()
+{
+	util_log *l = util_log::get_instance();
+	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
+}
+
+void tun_socket_notifier::request_process(request_t *request)
+{
+	tun_socket_fn_t fn = request->payload.fn;
+	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
+
+	switch(fn) {
+		case FN_HELLO: {
+			char buffer[32];
+			tun_info_t *tun_info = (tun_info_t *)(request + 1);
+			struct sockaddr_in *sin;
+			peer_info_t peer_info;
+			struct sockaddr client_address = *get_request_address();
+
+			peer_info.tun_info = *tun_info;
+			peer_info.notifier = this;
+
+			settings->map_clients.erase(client_address);
+			settings->map_clients[client_address] = peer_info;
+
+			//l->printf("server addr:%s\n", m_c->get_server_address_string().c_str());
+
+			//l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
+
+			sin = (struct sockaddr_in *)&tun_info->ip;
+			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+			//l->printf("ip addr:%s\n", buffer);
+
+			sin = (struct sockaddr_in *)&tun_info->netmask;
+			inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+			//l->printf("netmask:%s\n", buffer);
+
+			reply_tun_info();
+		}
+		break;
+
+		case FN_FRAME: {
+			char *frame = (char *)(request + 1);
+			int size = request->header.data_size;
+			int ret = -1;
+
+			if(request->header.data_size != request->header.total_size) {
+				if(request->header.data_offset == 0) {
+					rx_seq = request->payload.seq;
+				} else {
+					if(rx_seq != request->payload.seq) {//丢掉包
+						//l->printf("drop packet %d!\n", request->payload.seq);
+						break;
+					}
+				}
+
+				memcpy(rx_reqest + request->header.data_offset, frame, size);
+
+				if(request->header.data_offset + request->header.data_size == request->header.total_size) {
+					ret = write(settings->tun->get_tap_fd(), rx_reqest, request->header.total_size);
+				} else {
+					break;
+				}
+			} else {
+				ret = write(settings->tun->get_tap_fd(), frame, size);
+			}
+
+			if(ret < 0) {
+				l->printf("write tap device error!(%s)\n", strerror(errno));
+			}
+		}
+		break;
+
+		default: {
+		}
+		break;
+	}
 }
 
 void tun_socket_notifier::process_message()
