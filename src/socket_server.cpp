@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2019年12月03日 星期二 09时16分16秒
+ *   修改日期：2019年12月03日 星期二 14时35分51秒
  *   描    述：
  *
  *================================================================*/
@@ -129,6 +129,8 @@ socket_server_notifier::socket_server_notifier(server *s, unsigned int events) :
 	util_log *l = util_log::get_instance();
 
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
+	set_timeout(1, 0);
 
 	m_s = s;
 	add_loop();
@@ -269,6 +271,20 @@ void socket_server_notifier::reply_tun_info()
 		if(ret <= 0) {
 		}
 	}
+}
+
+int socket_server_notifier::do_timeout()
+{
+	//util_log *l = util_log::get_instance();
+	int ret = -1;
+
+	check_client();
+
+	set_timeout(3, 0);
+
+	ret = 0;
+
+	return ret;
 }
 
 int start_serve(short server_port, trans_protocol_type_t protocol)

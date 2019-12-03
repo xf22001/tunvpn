@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2019年12月03日 星期二 08时54分39秒
+ *   修改日期：2019年12月03日 星期二 14时48分38秒
  *   描    述：
  *
  *================================================================*/
@@ -23,7 +23,7 @@ socket_client_notifier::socket_client_notifier(client *c, unsigned int events) :
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 	m_c = c;
 	add_loop();
-	set_timeout(3, 0);
+	set_timeout(1, 0);
 }
 
 socket_client_notifier::~socket_client_notifier()
@@ -147,7 +147,13 @@ int socket_client_notifier::do_timeout()
 
 	if(settings->tun != NULL) {
 		ret = chunk_sendto(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_c->get_server_address(), *m_c->get_server_address_size());
+
+		if(ret > 0) {
+			ret = 0;
+		}
 	}
+
+	check_client();
 
 	set_timeout(3, 0);
 

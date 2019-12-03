@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2019年12月03日 星期二 11时37分03秒
+ *   修改日期：2019年12月03日 星期二 14时09分11秒
  *   描    述：
  *
  *================================================================*/
@@ -78,6 +78,7 @@ public:
 	int encrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size);
 	int decrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size);
 	void request_process(request_t *request);
+	void check_client();
 	virtual void reply_tun_info();
 	virtual struct sockaddr *get_request_address();
 	virtual int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);

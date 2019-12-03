@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月03日 星期二 12时48分30秒
+ *   修改日期：2019年12月03日 星期二 14时26分39秒
  *   描    述：
  *
  *================================================================*/
@@ -189,6 +189,7 @@ void tun_socket_notifier::request_process(request_t *request)
 
 			peer_info.tun_info = *tun_info;
 			peer_info.notifier = this;
+			peer_info.time = time(NULL);
 
 			settings->map_clients.erase(client_address);
 			settings->map_clients[client_address] = peer_info;
@@ -305,4 +306,22 @@ int tun_socket_notifier::decrypt_request(unsigned char *in_data, int in_size, un
 
 	*out_size = in_size;
 	return ret;
+}
+
+void tun_socket_notifier::check_client()
+{
+	settings *settings = settings::get_instance();
+	std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+	peer_info_t peer_info;
+	struct sockaddr address;
+	time_t current_time = time(NULL);
+
+	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+		address = it->first;
+		peer_info = it->second;
+
+		if(current_time - peer_info.time >= 10) {
+			settings->map_clients.erase(address);
+		}
+	}
 }

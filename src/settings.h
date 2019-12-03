@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2019年12月02日 星期一 14时31分19秒
+ *   修改日期：2019年12月03日 星期二 14时05分14秒
  *   描    述：
  *
  *================================================================*/
@@ -20,6 +20,7 @@ extern "C"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <time.h>
 
 #ifdef __cplusplus
 }
@@ -32,6 +33,7 @@ extern "C"
 typedef struct {
 	tun_info_t tun_info;
 	tun_socket_notifier *notifier;
+	time_t time;
 } peer_info_t;
 
 struct sockaddr_less_then {
