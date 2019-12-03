@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2019年12月03日 星期二 09时19分49秒
+ *   修改日期：2019年12月03日 星期二 11时37分03秒
  *   描    述：
  *
  *================================================================*/
@@ -28,7 +28,7 @@ extern "C"
 #include "os_util.h"
 #include "event_loop.h"
 
-#define MAX_REQUEST_PACKET_SIZE 1200
+#define MAX_REQUEST_PACKET_SIZE SOCKET_TXRX_BUFFER_SIZE
 
 #define DEFAULT_REQUEST_MAGIC 0xa5a55a5a
 

@@ -6,7 +6,7 @@
  *   文件名称：linux_tun.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 11时21分13秒
- *   修改日期：2019年12月03日 星期二 09时22分41秒
+ *   修改日期：2019年12月03日 星期二 12时55分50秒
  *   描    述：
  *
  *================================================================*/
@@ -51,14 +51,8 @@ int linux_tun::tun_ioctl(int fd, int request)
 		return ret;
 	}
 
-	memset(&ifr, 0, sizeof(struct ifreq));
-	ifr.ifr_flags = (IFF_TAP | IFF_NO_PI);
-
 	strncpy(ifr.ifr_name, tap_name.c_str(), size);
 	ifr.ifr_name[size] = 0;
-
-	//l->printf("ifr.ifr_name:%s\n", ifr.ifr_name);
-	//l->dump((const char *)ifr.ifr_name, IFNAMSIZ);
 
 	ret = ioctl(fd, request, (void *)&ifr);
 
@@ -126,6 +120,14 @@ int linux_tun::update_tun_info()
 
 	l->printf("netmask:%s\n", buffer);
 
+
+	ifr.ifr_mtu = 1400;
+	ret = tun_ioctl(sockfd, SIOCSIFMTU);
+	if(ret < 0) {
+		l->printf("ioctl %s failed!(%s)\n", "SIOCSIFMTU", strerror(errno));
+		goto fail;
+	}
+
 	ret = 0;
 
 	return ret;
@@ -156,6 +158,7 @@ int linux_tun::open_tun(std::string request_name)
 		goto failed;
 	}
 
+	ifr.ifr_flags = (IFF_TAP | IFF_NO_PI);
 	ret = tun_ioctl(tap_fd, TUNSETIFF);
 
 	if(ret < 0) {
