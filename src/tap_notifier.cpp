@@ -6,7 +6,7 @@
  *   文件名称：tap_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月01日 星期日 09时29分18秒
- *   修改日期：2019年12月02日 星期一 17时29分05秒
+ *   修改日期：2019年12月13日 星期五 15时41分00秒
  *   描    述：
  *
  *================================================================*/
@@ -66,7 +66,7 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 	int ret = -1;
 	//util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
-	unsigned char dest_mac_addr[IFHWADDRLEN];
+	struct ethhdr *frame_header;
 	struct sockaddr dest_addr;
 	peer_info_t *peer_info;
 	//struct sockaddr_in *sin;
@@ -88,7 +88,7 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 	//         mac_data[4],
 	//         mac_data[5]);
 
-	memcpy(dest_mac_addr, frame, IFHWADDRLEN);
+	frame_header = (struct ethhdr *)frame;
 
 	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
 		dest_addr = it->first;
@@ -97,7 +97,7 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 		//sin = (struct sockaddr_in *)&dest_addr;
 		//inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
-		if(memcmp(dest_mac_addr, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
+		if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
 			//l->printf("send fram to %s, frame mac:%s\n", buffer, buffer_mac);
 			ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
 			found = 1;

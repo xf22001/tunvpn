@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月03日 星期二 16时13分18秒
+ *   修改日期：2019年12月13日 星期五 17时21分51秒
  *   描    述：
  *
  *================================================================*/
@@ -237,17 +237,103 @@ void tun_socket_notifier::request_process(request_t *request)
 			int total_size = request->header.total_size;
 			int size = request->header.data_size;
 			int ret = -1;
+			struct ethhdr *frame_header = (struct ethhdr *)frame;
+			tun_info_t *tun_info = settings->tun->get_tun_info();
+			unsigned char broadcast_mac_addr[IFHWADDRLEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+			int broadcast_frame = 0;
+
+			int found = 0;
+			std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+			char buffer[32];
+			char buffer_mac[32];
+			struct sockaddr dest_addr;
+			peer_info_t *peer_info;
+			struct sockaddr_in *sin;
+			struct sockaddr client_address = *get_request_address();
 
 			if(total_size != size) {
 				l->printf("total_size:%d, frame size:%d\n", total_size, size);
 				break;
 			}
 
-			//l->printf("frame size:%d\n", size);
-			ret = write(settings->tun->get_tap_fd(), frame, size);
+			ret = memcmp(frame_header->h_source, tun_info->mac_addr, IFHWADDRLEN);
 
-			if(ret < 0) {
-				l->printf("write tap device error!(%s)\n", strerror(errno));
+			if(ret == 0) {
+				l->printf("drop frame:source mac addr is same as local tun if!\n");
+				break;
+			}
+
+			ret = memcmp(frame_header->h_dest, tun_info->mac_addr, IFHWADDRLEN);
+
+			if(ret == 0) {
+				//l->printf("frame size:%d\n", size);
+				ret = write(settings->tun->get_tap_fd(), frame, size);
+
+				if(ret < 0) {
+					l->printf("write tap device error!(%s)\n", strerror(errno));
+				}
+
+				break;
+			}
+
+			ret = memcmp(frame_header->h_dest, broadcast_mac_addr, IFHWADDRLEN);
+
+			if(ret == 0) {
+				broadcast_frame = 1;
+			}
+
+			snprintf(buffer_mac, 32, "%02x:%02x:%02x:%02x:%02x:%02x",
+			         frame_header->h_dest[0],
+			         frame_header->h_dest[1],
+			         frame_header->h_dest[2],
+			         frame_header->h_dest[3],
+			         frame_header->h_dest[4],
+			         frame_header->h_dest[5]);
+
+			for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+				dest_addr = it->first;
+				peer_info = &it->second;
+
+				sin = (struct sockaddr_in *)&dest_addr;
+				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+
+				if(broadcast_frame == 1) {
+
+					found = 1;
+
+					if(it == settings->map_clients.find(client_address)) {
+						l->printf("skip relay fram to source client:%s\n", buffer);
+						continue;
+					}
+
+					l->printf("relay fram to %s, frame mac:%s\n", buffer, buffer_mac);
+					ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+				} else {
+					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {//发给客户端
+						l->printf("relay fram to %s, frame mac:%s\n", buffer, buffer_mac);
+						ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+						found = 1;
+						break;
+					}
+				}
+			}
+
+			if(found == 0) {
+				l->printf("write unknow fram, frame mac:%s\n", buffer_mac);
+				ret = write(settings->tun->get_tap_fd(), frame, size);
+
+				if(ret < 0) {
+					l->printf("write tap device error!(%s)\n", strerror(errno));
+				}
+			} else {
+				if(broadcast_frame == 1) {
+					l->printf("write broadcast fram, frame mac:%s\n", buffer_mac);
+					ret = write(settings->tun->get_tap_fd(), frame, size);
+
+					if(ret < 0) {
+						l->printf("write tap device error!(%s)\n", strerror(errno));
+					}
+				}
 			}
 		}
 		break;
