@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2019年12月14日 星期六 09时24分31秒
+ *   修改日期：2019年12月14日 星期六 10时13分22秒
  *   描    述：
  *
  *================================================================*/
@@ -294,16 +294,7 @@ void tun_socket_notifier::request_process(request_t *request)
 				sin = (struct sockaddr_in *)&dest_addr;
 				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
-				if(unicast_frame == 1) {
-					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
-						l->printf("relay fram to %s, frame mac:%s\n", buffer, buffer_mac);
-						ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
-						found = 1;
-						break;
-					}
-				} else {
-					found = 1;
-
+				if(unicast_frame == 0) {
 					if(it == settings->map_clients.find(client_address)) {
 						l->printf("skip relay fram to source client:%s\n", buffer);
 						continue;
@@ -311,6 +302,13 @@ void tun_socket_notifier::request_process(request_t *request)
 
 					l->printf("relay fram to %s, frame mac:%s\n", buffer, buffer_mac);
 					ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+				} else {
+					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
+						l->printf("relay fram to %s, frame mac:%s\n", buffer, buffer_mac);
+						ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+						found = 1;
+						break;
+					}
 				}
 			}
 
@@ -323,18 +321,19 @@ void tun_socket_notifier::request_process(request_t *request)
 				}
 
 				break;
-			}
+			} else {
+				if(found == 0) {
+					l->printf("write unknow fram, frame mac:%s\n", buffer_mac);
+					ret = write(settings->tun->get_tap_fd(), frame, size);
 
-			if((unicast_frame == 1) && (found == 0)) {
-				l->printf("write unknow fram, frame mac:%s\n", buffer_mac);
-				ret = write(settings->tun->get_tap_fd(), frame, size);
+					if(ret < 0) {
+						l->printf("write tap device error!(%s)\n", strerror(errno));
+					}
 
-				if(ret < 0) {
-					l->printf("write tap device error!(%s)\n", strerror(errno));
+					break;
 				}
-
-				break;
 			}
+
 		}
 		break;
 
