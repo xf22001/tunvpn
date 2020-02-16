@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年01月07日 星期二 13时51分26秒
+ *   修改日期：2020年02月16日 星期日 14时57分24秒
  *   描    述：
  *
  *================================================================*/
@@ -18,9 +18,6 @@
 
 #include "util_log.h"
 #include "settings.h"
-
-unsigned int tun_socket_notifier::rx_seq = 0;
-unsigned int tun_socket_notifier::tx_seq = 0;
 
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
@@ -61,104 +58,31 @@ int tun_socket_notifier::send_request(char *request, int size, struct sockaddr *
 
 int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t addr_size)
 {
-	size_t ret = 0;
-	char *p = (char *)data;
-	size_t sent = 0;
-	size_t head_size = sizeof(request_t);
-	size_t payload = MAX_REQUEST_PACKET_SIZE - head_size;
-	//util_log *l = util_log::get_instance();
+	int ret = 0;
+	request_info_t request_info;
 
-	if(data == NULL) {
-		ret = -1;
-		return ret;
-	}
+	request_info.fn = (unsigned int)fn;
+	request_info.data = (const unsigned char *)data;
+	request_info.size = size;
+	request_info.consumed = 0;
+	request_info.request = (request_t *)tx_buffer;
+	request_info.request_size = 0;
 
-	while(sent < size) {
-		size_t left = size - sent;
-		size_t len = (left > payload) ? payload : left;
-		request_t *request = (request_t *)tx_buffer;
-		int send_size = len + head_size;
-		int count;
+	while(request_info.size > request_info.consumed) {
+		::request_encode(&request_info);
 
-		request->header.magic = DEFAULT_REQUEST_MAGIC;
-		request->header.total_size = size;
-		request->header.data_offset = sent;
-		request->header.data_size = len;
-
-		request->payload.fn = fn;
-		request->payload.seq = tx_seq;
-		memcpy(request + 1, p + sent, len);
-
-		request->header.crc = calc_crc8(((header_info_t *)&request->header) + 1, len + sizeof(payload_info_t));
-
-		//l->printf("send_request:%d!\n", send_size);
-		count = send_request((char *)request, send_size, address, addr_size);
-
-		if(count == send_size) {
-			sent += len;
-		} else {
-			ret = -1;
-			break;
+		if(request_info.request_size != 0) {
+			if(send_request(tx_buffer, request_info.request_size, address, addr_size) != (int)request_info.request_size) {
+				ret = -1;
+				break;
+			}
 		}
 	}
 
-	if(ret == 0) {
-		ret = sent;
-		tx_seq++;
-	}
+	ret = size;
 
 	return ret;
 }
-
-
-void tun_socket_notifier::request_parse(char *buffer, int size, char **prequest, int *request_size)
-{
-	util_log *l = util_log::get_instance();
-	request_t *request = (request_t *)buffer;
-	size_t valid_size = size;
-	size_t payload;
-	size_t max_payload;
-
-	*prequest = NULL;
-	*request_size = 0;
-
-	if(valid_size < sizeof(request_t)) {
-		return;
-	}
-
-	payload = valid_size - sizeof(request_t);
-	max_payload = SOCKET_TXRX_BUFFER_SIZE - sizeof(request_t);
-
-	if(request->header.magic != DEFAULT_REQUEST_MAGIC) {//无效
-		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
-		l->printf("magic invalid!\n");
-		return;
-	}
-
-	if(request->header.data_size > max_payload) {//无效
-		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
-		l->printf("size > max_payload invalid!\n");
-		return;
-	}
-
-	if(request->header.data_size > payload) {//还要收
-		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
-		l->printf("size > payload invalid!\n");
-		*prequest = (char *)request;
-		return;
-	}
-
-	if(request->header.crc != calc_crc8(((header_info_t *)&request->header) + 1, request->header.data_size + sizeof(payload_info_t))) {//无效
-		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
-		l->printf("crc invalid!\n");
-		*prequest = NULL;
-		return;
-	}
-
-	*prequest = (char *)request;
-	*request_size = request->header.data_size + sizeof(request_t);
-}
-
 
 struct sockaddr *tun_socket_notifier::get_request_address()
 {
@@ -175,7 +99,7 @@ void tun_socket_notifier::reply_tun_info()
 
 void tun_socket_notifier::request_process(request_t *request)
 {
-	tun_socket_fn_t fn = request->payload.fn;
+	tun_socket_fn_t fn = (tun_socket_fn_t)request->payload.fn;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 
@@ -355,7 +279,7 @@ void tun_socket_notifier::process_message()
 	//l->dump((const char *)rx_buffer, rx_buffer_received);
 
 	while(left >= (int)sizeof(request_t)) {
-		request_parse(buffer, rx_buffer_received, &request, &request_size);
+		::request_decode(buffer, rx_buffer_received, &request, &request_size);
 		//l->printf("got request_size %d\n", request_size);
 
 		if(request != NULL) {//可能有效包

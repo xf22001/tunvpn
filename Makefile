@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2019年12月03日 星期二 16时02分04秒
+#   修改日期：2020年02月16日 星期日 14时50分00秒
 #   描    述：
 #
 #================================================================
@@ -25,6 +25,7 @@ c_files += src/settings.cpp
 c_files += src/tap_notifier.cpp
 c_files += src/socket_server.cpp
 c_files += src/socket_client.cpp
+c_files += src/request.cpp
 c_files += src/tun_socket_notifier.cpp
 c_files += src/console.cpp
 
