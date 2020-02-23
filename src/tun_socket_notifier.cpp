@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年02月16日 星期日 14时57分24秒
+ *   修改日期：2020年02月23日 星期日 17时20分55秒
  *   描    述：
  *
  *================================================================*/
@@ -79,7 +79,9 @@ int tun_socket_notifier::chunk_sendto(tun_socket_fn_t fn, void *data, size_t siz
 		}
 	}
 
-	ret = size;
+	if(ret != -1) {
+		ret = size;
+	}
 
 	return ret;
 }
