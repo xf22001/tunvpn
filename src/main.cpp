@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年03月10日 星期二 10时52分05秒
+ *   修改日期：2020年03月10日 星期二 12时19分25秒
  *   描    述：
  *
  *================================================================*/
@@ -97,12 +97,8 @@ static void start_peer_client(trans_protocol_type_t protocol)
 
 void connect_thread::func()
 {
-	settings *settings = settings::get_instance();
-
 	while(true) {
-		if(settings->peer_addr.size() >= 0) {
-			start_peer_client(TRANS_PROTOCOL_UDP);
-		}
+		start_peer_client(TRANS_PROTOCOL_UDP);
 
 		sleep(3);
 	}
@@ -119,7 +115,6 @@ int start_tun()
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	linux_tun *tun = new linux_tun();
-	connect_thread *th = new connect_thread;
 
 	settings->tun = tun;
 
@@ -143,7 +138,10 @@ int start_tun()
 		start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
 	}
 
-	th->start();
+	if(settings->peer_addr.size() > 0) {
+		connect_thread *th = new connect_thread;
+		th->start();
+	}
 
 	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
 	settings->input_notifier = new input_notifier(0, POLLIN);

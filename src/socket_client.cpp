@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年03月10日 星期二 10时24分14秒
+ *   修改日期：2020年03月10日 星期二 11时54分58秒
  *   描    述：
  *
  *================================================================*/
@@ -167,6 +167,7 @@ int socket_client_notifier::do_timeout()
 	set_timeout(3, 0);
 
 	if(time(NULL) - update_time >= 15) {
+		close(m_c->get_fd());
 		settings->map_notifier.erase(m_c->get_fd());
 		settings->map_host.erase(m_c->get_fd());
 		delete this;
