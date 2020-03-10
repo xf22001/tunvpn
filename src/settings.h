@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2019年12月03日 星期二 15时29分52秒
+ *   修改日期：2020年03月10日 星期二 10时15分59秒
  *   描    述：
  *
  *================================================================*/
@@ -29,6 +29,8 @@ extern "C"
 #include "configure/configure.h"
 #include "linux_tun.h"
 #include "tun_socket_notifier.h"
+
+#define CLIENT_VALIDE_TIMEOUT 15
 
 typedef struct {
 	tun_info_t tun_info;
@@ -75,6 +77,7 @@ public:
 	event_notifier *tap_notifier;
 	event_notifier *input_notifier;
 	std::map<int, tun_socket_notifier *> map_notifier;
+	std::map<int, std::string> map_host;
 	std::map<struct sockaddr, peer_info_t, sockaddr_less_then> map_clients;
 
 	double value_strtod(std::string number);

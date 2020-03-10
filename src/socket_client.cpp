@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2019年12月03日 星期二 14时48分38秒
+ *   修改日期：2020年03月10日 星期二 10时24分14秒
  *   描    述：
  *
  *================================================================*/
@@ -22,6 +22,7 @@ socket_client_notifier::socket_client_notifier(client *c, unsigned int events) :
 	util_log *l = util_log::get_instance();
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 	m_c = c;
+	update_time = time(NULL);
 	add_loop();
 	set_timeout(1, 0);
 }
@@ -37,10 +38,14 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
-	//settings *settings = settings::get_instance();
+	settings *settings = settings::get_instance();
 
-	if((events & get_events()) == 0) {
+	if((events ^ get_events()) != 0) {
 		l->printf("client:events:%08x\n", events);
+		close(fd);
+		settings->map_notifier.erase(fd);
+		settings->map_host.erase(fd);
+		delete this;
 	} else {
 		switch(m_c->get_type()) {
 			case SOCK_STREAM: {
@@ -49,9 +54,10 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 				if(ret == 0) {
 					l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
 					//m_c->do_connect();
-					//close(fd);
-					//settings->map_clients.erase(fd);
-					//delete this;
+					close(fd);
+					settings->map_notifier.erase(fd);
+					settings->map_host.erase(fd);
+					delete this;
 					ret = 0;
 				} else if(ret > 0) {
 					//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
@@ -59,6 +65,8 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 					decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 					rx_buffer_received += ret;
 					process_message();
+					update_time = time(NULL);
+					ret = 0;
 				} else {
 					l->printf("read %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
 				}
@@ -79,6 +87,7 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 					decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 					rx_buffer_received += ret;
 					process_message();
+					update_time = time(NULL);
 					ret = 0;
 				} else {
 					l->printf("recvfrom %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
@@ -157,18 +166,34 @@ int socket_client_notifier::do_timeout()
 
 	set_timeout(3, 0);
 
+	if(time(NULL) - update_time >= 15) {
+		settings->map_notifier.erase(m_c->get_fd());
+		settings->map_host.erase(m_c->get_fd());
+		delete this;
+	}
+
 	return ret;
 }
 
-int start_client(std::string server_address, unsigned short server_port, trans_protocol_type_t protocol)
+int start_client(std::string host, unsigned short server_port, trans_protocol_type_t protocol)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	client *c = NULL;
 	tun_socket_notifier *notifier = NULL;
+	std::string server_address;
+	std::vector<std::string> hosts;
 
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
+	hosts = get_host_by_name(host);
+
+	if(hosts.empty()) {
+		return ret;
+	}
+
+	server_address = hosts.at(0);
 
 	if(protocol == TRANS_PROTOCOL_TCP) {
 		c = new client(AF_INET, SOCK_STREAM, IPPROTO_IP, server_address, server_port);
@@ -186,6 +211,7 @@ int start_client(std::string server_address, unsigned short server_port, trans_p
 
 	notifier = new socket_client_notifier(c, POLLIN);
 	settings->map_notifier[c->get_fd()] = notifier;
+	settings->map_host[c->get_fd()] = host;
 
 	ret = 0;
 

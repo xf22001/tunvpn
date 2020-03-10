@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2019年12月03日 星期二 10时23分12秒
+ *   修改日期：2020年03月10日 星期二 10时52分05秒
  *   描    述：
  *
  *================================================================*/
@@ -14,6 +14,7 @@
 
 #include "util_log.h"
 
+#include <unistd.h>
 #include "linux_tun.h"
 #include "ifconfig.h"
 #include "settings.h"
@@ -42,18 +43,27 @@ void loop_thread::start()
 	run();
 }
 
+connect_thread::connect_thread()
+{
+}
+
+connect_thread::~connect_thread()
+{
+}
+
 static void start_peer_client(trans_protocol_type_t protocol)
 {
 	settings *settings = settings::get_instance();
 	util_log *l = util_log::get_instance();
 
 	std::vector<std::string>::iterator it;
+	std::map<int, std::string>::iterator it_host;
 
 	for(it = settings->peer_addr.begin(); it != settings->peer_addr.end(); it++) {
 		std::string ip_port = *it;
-		std::string ip;
+		std::string host;
 		std::string port;
-		std::vector<std::string> hosts;
+		bool find_host = false;
 
 		std::vector<std::string> matched_list;
 		std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
@@ -65,27 +75,51 @@ static void start_peer_client(trans_protocol_type_t protocol)
 			continue;
 		}
 
-		ip = matched_list.at(1);
+		host = matched_list.at(1);
 		port = matched_list.at(2);
-		l->printf("ip:%s, port:%s\n", ip.c_str(), port.c_str());
 
-		hosts = get_host_by_name(ip);
+		for(it_host = settings->map_host.begin(); it_host != settings->map_host.end(); it_host++) {
+			if(it_host->second == host) {
+				find_host = true;
+				break;
+			}
+		}
 
-		if(hosts.empty()) {
+		if(find_host) {
 			continue;
 		}
 
-		ip = hosts.at(0);
-		start_client(ip, settings->value_strtod(port), protocol);
+		l->printf("start to connect host:%s, port:%s\n", host.c_str(), port.c_str());
+
+		start_client(host, settings->value_strtod(port), protocol);
 	}
 }
 
-int test_tun()
+void connect_thread::func()
+{
+	settings *settings = settings::get_instance();
+
+	while(true) {
+		if(settings->peer_addr.size() >= 0) {
+			start_peer_client(TRANS_PROTOCOL_UDP);
+		}
+
+		sleep(3);
+	}
+}
+
+void connect_thread::start()
+{
+	run();
+}
+
+int start_tun()
 {
 	int ret = 0;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	linux_tun *tun = new linux_tun();
+	connect_thread *th = new connect_thread;
 
 	settings->tun = tun;
 
@@ -109,9 +143,7 @@ int test_tun()
 		start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
 	}
 
-	if(settings->peer_addr.size() > 0) {
-		start_peer_client(TRANS_PROTOCOL_UDP);
-	}
+	th->start();
 
 	settings->tap_notifier = new tap_notifier(tun->get_tap_fd(), POLLIN);
 	settings->input_notifier = new input_notifier(0, POLLIN);
@@ -136,7 +168,7 @@ int main(int argc, char **argv)
 
 	th->start();
 
-	ret = test_tun();
+	ret = start_tun();
 
 	if(ret != 0) {
 		return ret;

@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年02月23日 星期日 17时20分55秒
+ *   修改日期：2020年03月10日 星期二 09时36分13秒
  *   描    述：
  *
  *================================================================*/
@@ -356,7 +356,7 @@ void tun_socket_notifier::check_client()
 		address = it->first;
 		peer_info = it->second;
 
-		if(current_time - peer_info.time >= 10) {
+		if(current_time - peer_info.time >= CLIENT_VALIDE_TIMEOUT) {
 			invalid_address.push_back(address);
 		}
 	}
