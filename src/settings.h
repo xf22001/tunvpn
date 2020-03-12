@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年03月10日 星期二 10时15分59秒
+ *   修改日期：2020年03月12日 星期四 09时00分28秒
  *   描    述：
  *
  *================================================================*/
@@ -29,6 +29,7 @@ extern "C"
 #include "configure/configure.h"
 #include "linux_tun.h"
 #include "tun_socket_notifier.h"
+#include "lock.h"
 
 #define CLIENT_VALIDE_TIMEOUT 15
 
@@ -80,9 +81,14 @@ public:
 	std::map<int, std::string> map_host;
 	std::map<struct sockaddr, peer_info_t, sockaddr_less_then> map_clients;
 
+	mutex_lock peer_info_lock;
+
 	double value_strtod(std::string number);
 	int get_time_val(struct timeval *timeval);
 	std::string get_timestamp();
 	int parse_args_from_configuration(int argc, char **argv);
+	void add_peer_info(int fd, tun_socket_notifier *notifier, std::string host);
+	void remove_peer_info(int fd);
+	bool find_peer_host(std::string host);
 };
 #endif //_SETTINGS_H

@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年03月10日 星期二 12时19分25秒
+ *   修改日期：2020年03月12日 星期四 08时55分26秒
  *   描    述：
  *
  *================================================================*/
@@ -78,12 +78,7 @@ static void start_peer_client(trans_protocol_type_t protocol)
 		host = matched_list.at(1);
 		port = matched_list.at(2);
 
-		for(it_host = settings->map_host.begin(); it_host != settings->map_host.end(); it_host++) {
-			if(it_host->second == host) {
-				find_host = true;
-				break;
-			}
-		}
+		find_host = settings->find_peer_host(host);
 
 		if(find_host) {
 			continue;

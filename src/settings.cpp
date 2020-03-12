@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2019年12月03日 星期二 10时22分24秒
+ *   修改日期：2020年03月12日 星期四 09时01分16秒
  *   描    述：
  *
  *================================================================*/
@@ -112,21 +112,25 @@ int settings::get_app_settings_from_configuration(configure &cfg)
 	std::vector<std::string> values;
 
 	values = cfg.get("app", "tap_name");
+
 	if(values.size() > 0) {
 		tap_name = values.at(0);
 	}
 
 	values = cfg.get("app", "ip4_config");
+
 	if(values.size() > 0) {
 		ip4_config = values.at(0);
 	}
 
 	values = cfg.get("app", "server_port");
+
 	if(values.size() > 0) {
 		server_port = values.at(0);
 	}
 
 	values = cfg.get("app", "peer_addr");
+
 	if(values.size() > 0) {
 		peer_addr = values;
 	}
@@ -176,4 +180,37 @@ int settings::parse_args_from_configuration(int argc, char **argv)
 	}
 
 	return ret;
+}
+
+void settings::add_peer_info(int fd, tun_socket_notifier *notifier, std::string host)
+{
+	single_lock lock(&peer_info_lock);
+
+	map_notifier[fd] = notifier;
+	map_host[fd] = host;
+}
+
+void settings::remove_peer_info(int fd)
+{
+	single_lock lock(&peer_info_lock);
+
+	map_notifier.erase(fd);
+	map_host.erase(fd);
+}
+
+bool settings::find_peer_host(std::string host)
+{
+	single_lock lock(&peer_info_lock);
+
+	std::map<int, std::string>::iterator it_host;
+	bool find_host = false;
+
+	for(it_host = map_host.begin(); it_host != map_host.end(); it_host++) {
+		if(it_host->second == host) {
+			find_host = true;
+			break;
+		}
+	}
+
+	return find_host;
 }

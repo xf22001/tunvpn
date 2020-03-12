@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年03月10日 星期二 13时51分05秒
+ *   修改日期：2020年03月12日 星期四 08时58分10秒
  *   描    述：
  *
  *================================================================*/
@@ -43,8 +43,7 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 	if((events ^ get_events()) != 0) {
 		l->printf("client:events:%08x\n", events);
 		close(fd);
-		settings->map_notifier.erase(fd);
-		settings->map_host.erase(fd);
+		settings->remove_peer_info(fd);
 		delete this;
 	} else {
 		switch(m_c->get_type()) {
@@ -55,8 +54,7 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 					l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
 					//m_c->do_connect();
 					close(fd);
-					settings->map_notifier.erase(fd);
-					settings->map_host.erase(fd);
+					settings->remove_peer_info(fd);
 					delete this;
 					ret = 0;
 				} else if(ret > 0) {
@@ -168,8 +166,7 @@ int socket_client_notifier::do_timeout()
 
 	if(time(NULL) - update_time >= CLIENT_VALIDE_TIMEOUT) {
 		close(m_c->get_fd());
-		settings->map_notifier.erase(m_c->get_fd());
-		settings->map_host.erase(m_c->get_fd());
+		settings->remove_peer_info(m_c->get_fd());
 		delete this;
 	}
 
@@ -211,8 +208,7 @@ int start_client(std::string host, unsigned short server_port, trans_protocol_ty
 	}
 
 	notifier = new socket_client_notifier(c, POLLIN);
-	settings->map_notifier[c->get_fd()] = notifier;
-	settings->map_host[c->get_fd()] = host;
+	settings->add_peer_info(c->get_fd(), notifier, host);
 
 	ret = 0;
 
