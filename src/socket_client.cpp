@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年03月25日 星期三 13时00分38秒
+ *   修改日期：2020年03月25日 星期三 13时40分10秒
  *   描    述：
  *
  *================================================================*/
@@ -45,61 +45,63 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 		close(fd);
 		settings->remove_peer_info(fd);
 		delete this;
-	} else if((events & POLLIN) != 0) {
-		switch(m_c->get_type()) {
-			case SOCK_STREAM: {
-				ret = read(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received);
-
-				if(ret == 0) {
-					l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
-					//m_c->do_connect();
-					close(fd);
-					settings->remove_peer_info(fd);
-					delete this;
-					ret = 0;
-				} else if(ret > 0) {
-					//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
-					//l->dump((const char *)buffer, ret);
-					decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
-					rx_buffer_received += ret;
-					process_message();
-					update_time = time(NULL);
-					ret = 0;
-				} else {
-					l->printf("read %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
-				}
-			}
-			break;
-
-			case SOCK_DGRAM: {
-				ret = recvfrom(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received, 0, NULL, NULL);
-
-				if (ret == 0) {
-					l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
-					//close(fd);
-					//settings->map_clients.erase(fd);
-					//delete this;
-				} else if(ret > 0) {
-					//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
-					//l->dump((const char *)buffer, ret);
-					decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
-					rx_buffer_received += ret;
-					process_message();
-					update_time = time(NULL);
-					ret = 0;
-				} else {
-					l->printf("recvfrom %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
-				}
-			}
-			break;
-
-			default:
-				break;
-		}
-	} else if((events & POLLOUT) != 0) {
-		send_request_data();
 	} else {
-		l->printf("error:events:%08x\n", events);
+		if((events & POLLOUT) != 0) {
+			send_request_data();
+		}
+
+		if((events & POLLIN) != 0) {
+			switch(m_c->get_type()) {
+				case SOCK_STREAM: {
+					ret = read(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received);
+
+					if(ret == 0) {
+						l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
+						//m_c->do_connect();
+						close(fd);
+						settings->remove_peer_info(fd);
+						delete this;
+						ret = 0;
+					} else if(ret > 0) {
+						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
+						//l->dump((const char *)buffer, ret);
+						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
+						rx_buffer_received += ret;
+						process_message();
+						update_time = time(NULL);
+						ret = 0;
+					} else {
+						l->printf("read %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
+					}
+				}
+				break;
+
+				case SOCK_DGRAM: {
+					ret = recvfrom(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received, 0, NULL, NULL);
+
+					if (ret == 0) {
+						l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
+						//close(fd);
+						//settings->map_clients.erase(fd);
+						//delete this;
+					} else if(ret > 0) {
+						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
+						//l->dump((const char *)buffer, ret);
+						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
+						rx_buffer_received += ret;
+						process_message();
+						update_time = time(NULL);
+						ret = 0;
+					} else {
+						l->printf("recvfrom %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
+					}
+				}
+				break;
+
+				default:
+					break;
+			}
+		}
 	}
 
 	return ret;
