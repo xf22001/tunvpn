@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年03月10日 星期二 09时36分13秒
+ *   修改日期：2020年03月25日 星期三 13时05分58秒
  *   描    述：
  *
  *================================================================*/
@@ -23,6 +23,7 @@ tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_no
 {
 	//int flags;
 	rx_buffer_received = 0;
+	m_init_events = get_events();
 
 	//flags = fcntl(fd, F_GETFL, 0);
 	//flags |= O_NONBLOCK;
@@ -53,6 +54,53 @@ int tun_socket_notifier::send_request(char *request, int size, struct sockaddr *
 	int ret = -1;
 	util_log *l = util_log::get_instance();
 	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
+	return ret;
+}
+
+int tun_socket_notifier::add_request_data(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t addr_size)
+{
+	int ret = 0;
+	request_data_t request_data;
+	unsigned char *request_data_data = new unsigned char[size];
+
+	if(request_data_data == NULL) {
+		return ret;
+	}
+
+	memcpy(request_data_data, data, size);
+
+	request_data.fn = fn;
+	request_data.data = request_data_data;
+	request_data.size = size;
+	request_data.address = *address;
+
+	queue_request_data.push(request_data);
+
+	set_events(m_init_events | POLLOUT);
+	add_loop();
+
+	ret = size;
+
+	return ret;
+}
+
+int tun_socket_notifier::send_request_data()
+{
+	int ret = 0;
+	request_data_t request_data;
+
+	request_data = queue_request_data.front();
+
+	ret = chunk_sendto(request_data.fn, request_data.data, request_data.size, &request_data.address, sizeof(request_data.address));
+
+	delete request_data.data;
+	queue_request_data.pop();
+
+	if(queue_request_data.size() == 0) {
+		set_events(m_init_events);
+		add_loop();
+	}
+
 	return ret;
 }
 
@@ -227,11 +275,11 @@ void tun_socket_notifier::request_process(request_t *request)
 					}
 
 					l->printf("relay frame to %s, frame mac:%s\n", buffer, buffer_mac);
-					ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+					ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
 				} else {
 					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
 						l->printf("relay frame to %s, frame mac:%s\n", buffer, buffer_mac);
-						ret = peer_info->notifier->chunk_sendto(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+						ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
 						found = 1;
 						break;
 					}

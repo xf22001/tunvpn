@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年03月12日 星期四 08时58分10秒
+ *   修改日期：2020年03月25日 星期三 13时00分38秒
  *   描    述：
  *
  *================================================================*/
@@ -40,12 +40,12 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 
-	if((events ^ get_events()) != 0) {
+	if((events & get_events()) == 0) {
 		l->printf("client:events:%08x\n", events);
 		close(fd);
 		settings->remove_peer_info(fd);
 		delete this;
-	} else {
+	} else if((events & POLLIN) != 0) {
 		switch(m_c->get_type()) {
 			case SOCK_STREAM: {
 				ret = read(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received);
@@ -96,6 +96,10 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 			default:
 				break;
 		}
+	} else if((events & POLLOUT) != 0) {
+		send_request_data();
+	} else {
+		l->printf("error:events:%08x\n", events);
 	}
 
 	return ret;
@@ -153,7 +157,7 @@ int socket_client_notifier::do_timeout()
 	int ret = -1;
 
 	if(settings->tun != NULL) {
-		ret = chunk_sendto(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_c->get_server_address(), *m_c->get_server_address_size());
+		ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_c->get_server_address(), *m_c->get_server_address_size());
 
 		if(ret > 0) {
 			ret = 0;

@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2019年12月03日 星期二 14时35分51秒
+ *   修改日期：2020年03月25日 星期三 13时00分58秒
  *   描    述：
  *
  *================================================================*/
@@ -43,12 +43,12 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 
-	if((events ^ get_events()) != 0) {
+	if((events & get_events()) == 0) {
 		l->printf("error:events:%08x\n", events);
 		close(fd);
 		settings->map_notifier.erase(fd);
 		delete this;
-	} else if((events & get_events()) != 0) {
+	} else if((events & POLLIN) != 0) {
 		ret = read(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received);
 
 		if(ret == 0) {
@@ -74,6 +74,8 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 			process_message();
 			ret = 0;
 		}
+	} else if((events & POLLOUT) != 0) {
+		send_request_data();
 	} else {
 		l->printf("error:events:%08x\n", events);
 	}
@@ -96,7 +98,7 @@ void socket_server_client_notifier::reply_tun_info()
 	settings *settings = settings::get_instance();
 
 	if(settings->tun != NULL) {
-		int ret = chunk_sendto(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), &m_address, sizeof(struct sockaddr));
+		int ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), &m_address, sizeof(struct sockaddr));
 
 		if(ret <= 0) {
 		}
@@ -151,7 +153,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 
 	if((events & get_events()) == 0) {
 		l->printf("server:events:%08x\n", events);
-	} else {
+	} else if((events & POLLIN) != 0) {
 		switch(m_s->get_type()) {
 			case SOCK_STREAM: {
 				int client_fd;
@@ -172,7 +174,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 
 				l->printf("accept fd:%8d from %s\n", client_fd, client_address_string.c_str());
 
-				notifier = new socket_server_client_notifier(client_address, client_address_string, client_fd, POLLIN);
+				notifier = new socket_server_client_notifier(client_address, client_address_string, client_fd, POLLIN | POLLOUT);
 				settings->map_notifier[client_fd] = notifier;
 
 				ret = 0;
@@ -217,6 +219,10 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 			}
 			break;
 		}
+	} else if((events & POLLOUT) != 0) {
+		send_request_data();
+	} else {
+		l->printf("error:events:%08x\n", events);
 	}
 
 	return ret;
@@ -266,7 +272,7 @@ void socket_server_notifier::reply_tun_info()
 	settings *settings = settings::get_instance();
 
 	if(settings->tun != NULL) {
-		int ret = chunk_sendto(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_s->get_client_address(), *m_s->get_client_address_size());
+		int ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_s->get_client_address(), *m_s->get_client_address_size());
 
 		if(ret <= 0) {
 		}
