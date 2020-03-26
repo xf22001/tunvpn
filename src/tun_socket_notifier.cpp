@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年03月25日 星期三 13时05分58秒
+ *   修改日期：2020年03月26日 星期四 08时37分25秒
  *   描    述：
  *
  *================================================================*/
@@ -67,6 +67,10 @@ int tun_socket_notifier::add_request_data(tun_socket_fn_t fn, void *data, size_t
 		return ret;
 	}
 
+	if(queue_request_data.size() == 0) {
+		set_events(m_init_events | POLLOUT);
+	}
+
 	memcpy(request_data_data, data, size);
 
 	request_data.fn = fn;
@@ -75,9 +79,6 @@ int tun_socket_notifier::add_request_data(tun_socket_fn_t fn, void *data, size_t
 	request_data.address = *address;
 
 	queue_request_data.push(request_data);
-
-	set_events(m_init_events | POLLOUT);
-	add_loop();
 
 	ret = size;
 
@@ -98,7 +99,6 @@ int tun_socket_notifier::send_request_data()
 
 	if(queue_request_data.size() == 0) {
 		set_events(m_init_events);
-		add_loop();
 	}
 
 	return ret;
