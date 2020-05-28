@@ -6,7 +6,7 @@
  *   文件名称：socket_server.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分31秒
- *   修改日期：2019年12月03日 星期二 14时12分47秒
+ *   修改日期：2020年05月28日 星期四 10时35分56秒
  *   描    述：
  *
  *================================================================*/
@@ -60,6 +60,6 @@ public:
 	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
 };
 
-int start_serve(short server_port, trans_protocol_type_t protocol);
+int start_serve(std::string server_port, trans_protocol_type_t protocol);
 
 #endif //_SOCKET_SERVER_H

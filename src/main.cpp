@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年03月12日 星期四 08时55分26秒
+ *   修改日期：2020年05月28日 星期四 10时36分55秒
  *   描    述：
  *
  *================================================================*/
@@ -86,7 +86,7 @@ static void start_peer_client(trans_protocol_type_t protocol)
 
 		l->printf("start to connect host:%s, port:%s\n", host.c_str(), port.c_str());
 
-		start_client(host, settings->value_strtod(port), protocol);
+		start_client(host, port, protocol);
 	}
 }
 
@@ -130,7 +130,7 @@ int start_tun()
 	ret = tun->update_tun_info();
 
 	if(settings->server_port.size() > 0) {
-		start_serve(settings->value_strtod(settings->server_port), TRANS_PROTOCOL_UDP);
+		start_serve(settings->server_port, TRANS_PROTOCOL_UDP);
 	}
 
 	if(settings->peer_addr.size() > 0) {

@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年03月25日 星期三 13时40分10秒
+ *   修改日期：2020年05月28日 星期四 10时40分07秒
  *   描    述：
  *
  *================================================================*/
@@ -179,30 +179,21 @@ int socket_client_notifier::do_timeout()
 	return ret;
 }
 
-int start_client(std::string host, unsigned short server_port, trans_protocol_type_t protocol)
+int start_client(std::string host, std::string server_port, trans_protocol_type_t protocol)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	client *c = NULL;
 	tun_socket_notifier *notifier = NULL;
-	std::string server_address;
 	std::vector<std::string> hosts;
 
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
-	hosts = get_host_by_name(host);
-
-	if(hosts.empty()) {
-		return ret;
-	}
-
-	server_address = hosts.at(0);
-
 	if(protocol == TRANS_PROTOCOL_TCP) {
-		c = new client(AF_INET, SOCK_STREAM, IPPROTO_IP, server_address, server_port);
+		c = new client(AF_INET, SOCK_STREAM, IPPROTO_IP, host, server_port);
 	} else if(protocol == TRANS_PROTOCOL_UDP) {
-		c = new client(AF_INET, SOCK_DGRAM, IPPROTO_UDP, server_address, server_port);
+		c = new client(AF_INET, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
 	}
 
 	if(c == NULL) {

@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年03月25日 星期三 13时39分04秒
+ *   修改日期：2020年05月28日 星期四 10时35分54秒
  *   描    述：
  *
  *================================================================*/
@@ -297,7 +297,7 @@ int socket_server_notifier::do_timeout()
 	return ret;
 }
 
-int start_serve(short server_port, trans_protocol_type_t protocol)
+int start_serve(std::string server_port, trans_protocol_type_t protocol)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();

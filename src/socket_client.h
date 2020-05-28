@@ -6,7 +6,7 @@
  *   文件名称：socket_client.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分36秒
- *   修改日期：2020年03月10日 星期二 09时24分26秒
+ *   修改日期：2020年05月28日 星期四 10时34分51秒
  *   描    述：
  *
  *================================================================*/
@@ -42,6 +42,6 @@ public:
 	int do_timeout();
 };
 
-int start_client(std::string host, unsigned short server_port, trans_protocol_type_t protocol);
+int start_client(std::string host, std::string server_port, trans_protocol_type_t protocol);
 
 #endif //_SOCKET_CLIENT_H
