@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年03月12日 星期四 09时00分28秒
+ *   修改日期：2020年05月28日 星期四 16时38分15秒
  *   描    述：
  *
  *================================================================*/
@@ -39,18 +39,28 @@ typedef struct {
 	time_t time;
 } peer_info_t;
 
-struct sockaddr_less_then {
-	bool operator() (const struct sockaddr &addr1, const struct sockaddr &addr2) const
-	{
-		bool ret = false;
-		struct sockaddr_in *in1 = (struct sockaddr_in *)&addr1;
-		struct sockaddr_in *in2 = (struct sockaddr_in *)&addr2;
+typedef struct {
+	int domain;
+	struct sockaddr_storage addr;
+	socklen_t addr_size;
+} sockaddr_info_t;
 
-		if(in1->sin_addr.s_addr < in2->sin_addr.s_addr) {
-			ret = true;
+struct sockaddr_info_less_then {
+	bool operator() (const sockaddr_info_t &sockaddr_info1, const sockaddr_info_t &sockaddr_info2) const
+	{
+		if(sockaddr_info1.addr_size < sockaddr_info2.addr_size) {
+			return true;
 		}
 
-		return ret;
+		if(sockaddr_info1.addr_size > sockaddr_info2.addr_size) {
+			return false;
+		}
+
+		if(memcmp(&sockaddr_info1.addr, &sockaddr_info2.addr, sockaddr_info1.addr_size) < 0) {
+			return true;
+		}
+
+		return false;
 	}
 };
 
@@ -79,7 +89,7 @@ public:
 	event_notifier *input_notifier;
 	std::map<int, tun_socket_notifier *> map_notifier;
 	std::map<int, std::string> map_host;
-	std::map<struct sockaddr, peer_info_t, sockaddr_less_then> map_clients;
+	std::map<sockaddr_info_t, peer_info_t, sockaddr_info_less_then> map_clients;
 
 	mutex_lock peer_info_lock;
 

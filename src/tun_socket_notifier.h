@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2020年03月25日 星期三 13时06分22秒
+ *   修改日期：2020年05月28日 星期四 17时00分31秒
  *   描    述：
  *
  *================================================================*/
@@ -44,7 +44,8 @@ typedef struct {
 	tun_socket_fn_t fn;
 	unsigned char *data;
 	size_t size;
-	struct sockaddr address;
+	struct sockaddr_storage address;
+	socklen_t address_size;
 } request_data_t;
 
 class tun_socket_notifier : public event_notifier
@@ -73,6 +74,8 @@ public:
 	void check_client();
 	virtual void reply_tun_info();
 	virtual struct sockaddr *get_request_address();
+	virtual socklen_t *get_request_address_size();
+	virtual int get_domain();
 	virtual int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
 };
 

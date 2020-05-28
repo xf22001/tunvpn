@@ -6,7 +6,7 @@
  *   文件名称：os_util.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 14时58分51秒
- *   修改日期：2019年12月01日 星期日 16时43分36秒
+ *   修改日期：2020年05月28日 星期四 13时26分07秒
  *   描    述：
  *
  *================================================================*/
@@ -60,5 +60,4 @@ typedef union
 } u_uint16_bytes_t;
 
 int run_cmd(const char *cmd);
-std::vector<std::string> get_host_by_name(std::string hostname);
 #endif //_OS_UTIL_H

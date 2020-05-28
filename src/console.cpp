@@ -6,7 +6,7 @@
  *   文件名称：console.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月02日 星期一 12时49分52秒
- *   修改日期：2019年12月03日 星期二 15时03分52秒
+ *   修改日期：2020年05月28日 星期四 17时53分23秒
  *   描    述：
  *
  *================================================================*/
@@ -17,6 +17,7 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "net/net_utils.h"
 
 input_notifier::input_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
@@ -50,7 +51,7 @@ void input_notifier::process_message(int size)
 	settings *settings = settings::get_instance();
 	uint32_t fn;
 	int catched;
-	std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+	std::map<sockaddr_info_t, peer_info_t>::iterator it;
 
 	//l->dump((const char *)input_buffer, size);
 
@@ -61,31 +62,30 @@ void input_notifier::process_message(int size)
 
 		switch(fn) {
 			case 0: {
-				struct sockaddr remote_addr;
+				sockaddr_info_t remote_addr;
 				peer_info_t *peer_info;
-				struct sockaddr_in *sin;
-				char buffer_remote[32];
-				char buffer_peer[32];
 				char buffer_mac[32];
+				std::string address_string_remote;
+				char address_buffer_peer[32];
 
 				if(settings->map_clients.size() == 0) {
 					break;
 				}
 
-				l->printf("%-10s\t%-10s\t%-20s\n", 
-						"remote ip",
-						"peer ip",
-						"mac addr");
+				l->printf("%-32s\t%-10s\t%-20s\n",
+				          "remote ip",
+				          "peer ip",
+				          "mac addr");
 
 				for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+					struct sockaddr_in *sin;
 					remote_addr = it->first;
 					peer_info = &it->second;
 
-					sin = (struct sockaddr_in *)&remote_addr;
-					inet_ntop(AF_INET, &sin->sin_addr, buffer_remote, sizeof(buffer_remote));
-
+					address_string_remote = get_address_string(remote_addr.domain, (struct sockaddr *)&remote_addr.addr, &remote_addr.addr_size);
+					memset(address_buffer_peer, 0, sizeof(address_buffer_peer));
 					sin = (struct sockaddr_in *)&peer_info->tun_info.ip;
-					inet_ntop(AF_INET, &sin->sin_addr, buffer_peer, sizeof(buffer_peer));
+					inet_ntop(AF_INET, &sin->sin_addr, address_buffer_peer, sizeof(address_buffer_peer));
 
 					snprintf(buffer_mac, 32, "%02x:%02x:%02x:%02x:%02x:%02x",
 					         peer_info->tun_info.mac_addr[0],
@@ -95,10 +95,10 @@ void input_notifier::process_message(int size)
 					         peer_info->tun_info.mac_addr[4],
 					         peer_info->tun_info.mac_addr[5]);
 
-					l->printf("%-10s\t%-10s\t%-20s\n",
-					          buffer_remote,
-					          buffer_peer,
-						  buffer_mac);
+					l->printf("%-32s\t%-10s\t%-20s\n",
+					          address_string_remote.c_str(),
+					          address_buffer_peer,
+					          buffer_mac);
 				}
 			}
 			break;

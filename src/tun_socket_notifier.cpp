@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年03月26日 星期四 08时37分25秒
+ *   修改日期：2020年05月28日 星期四 17时03分16秒
  *   描    述：
  *
  *================================================================*/
@@ -18,6 +18,7 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "net/net_utils.h"
 
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
@@ -76,7 +77,8 @@ int tun_socket_notifier::add_request_data(tun_socket_fn_t fn, void *data, size_t
 	request_data.fn = fn;
 	request_data.data = request_data_data;
 	request_data.size = size;
-	request_data.address = *address;
+	request_data.address_size = addr_size;
+	memcpy(&request_data.address, address, addr_size);
 
 	queue_request_data.push(request_data);
 
@@ -92,7 +94,7 @@ int tun_socket_notifier::send_request_data()
 
 	request_data = queue_request_data.front();
 
-	ret = chunk_sendto(request_data.fn, request_data.data, request_data.size, &request_data.address, sizeof(request_data.address));
+	ret = chunk_sendto(request_data.fn, request_data.data, request_data.size, (struct sockaddr *)&request_data.address, request_data.address_size);
 
 	delete request_data.data;
 	queue_request_data.pop();
@@ -141,6 +143,21 @@ struct sockaddr *tun_socket_notifier::get_request_address()
 	return NULL;
 }
 
+socklen_t *tun_socket_notifier::get_request_address_size()
+{
+	util_log *l = util_log::get_instance();
+	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
+	return NULL;
+}
+
+int tun_socket_notifier::get_domain()
+{
+	util_log *l = util_log::get_instance();
+	l->printf("invalid %s!\n", __PRETTY_FUNCTION__);
+	return AF_UNSPEC;
+}
+
+
 void tun_socket_notifier::reply_tun_info()
 {
 	util_log *l = util_log::get_instance();
@@ -152,16 +169,21 @@ void tun_socket_notifier::request_process(request_t *request)
 	tun_socket_fn_t fn = (tun_socket_fn_t)request->payload.fn;
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
+	std::string address_string;
 
 	switch(fn) {
 		case FN_HELLO: {
-			char buffer[32];
 			tun_info_t *tun_info = (tun_info_t *)(request + 1);
-			struct sockaddr_in *sin;
 			peer_info_t peer_info;
-			struct sockaddr client_address = *get_request_address();
-			std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
+			sockaddr_info_t client_address;
+			std::map<sockaddr_info_t, peer_info_t>::iterator it;
 			bool log = false;
+
+			memset(&client_address, 0, sizeof(client_address));
+
+			client_address.domain = get_domain();
+			client_address.addr_size = *get_request_address_size();
+			memcpy(&client_address.addr, get_request_address(), client_address.addr_size);
 
 			peer_info.tun_info = *tun_info;
 			peer_info.notifier = this;
@@ -172,36 +194,25 @@ void tun_socket_notifier::request_process(request_t *request)
 			if(it == settings->map_clients.end()) {
 				log = true;
 			} else {
-				struct sockaddr_in *sin1 = (struct sockaddr_in *)&it->first;
-				struct sockaddr_in *sin2 = (struct sockaddr_in *)&client_address;
-
-				if(memcmp(sin1, sin2, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr)) != 0) {
-					l->dump((const char *)sin1, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr));
-					l->dump((const char *)sin2, __SOCKADDR_COMMON_SIZE + sizeof(in_port_t) + sizeof(struct in_addr));
-					log = true;
-				}
-
-				settings->map_clients.erase(it);
+				//settings->map_clients.erase(it);
 			}
 
 			settings->map_clients[client_address] = peer_info;
 			reply_tun_info();
 
 			if(log) {
+				socklen_t addr_size = sizeof(struct sockaddr_in);
 				l->printf("update client!\n");
-				sin = (struct sockaddr_in *)&client_address;
-				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
-				l->printf("client_address:%s\n", buffer);
+				address_string = get_address_string(client_address.domain, (struct sockaddr *)&client_address.addr, &client_address.addr_size);
+				l->printf("client_address:%s\n", address_string.c_str());
 
 				l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
 
-				sin = (struct sockaddr_in *)&tun_info->ip;
-				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
-				l->printf("ip addr:%s\n", buffer);
+				address_string = get_address_string(AF_INET, (struct sockaddr *)&tun_info->ip, &addr_size);
+				l->printf("ip addr:%s\n", address_string.c_str());
 
-				sin = (struct sockaddr_in *)&tun_info->netmask;
-				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
-				l->printf("netmask:%s\n", buffer);
+				address_string = get_address_string(AF_INET, (struct sockaddr *)&tun_info->netmask, &addr_size);
+				l->printf("netmask:%s\n", address_string.c_str());
 			}
 		}
 		break;
@@ -216,13 +227,17 @@ void tun_socket_notifier::request_process(request_t *request)
 			int unicast_frame = 0;
 
 			int found = 0;
-			std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
-			char buffer[32];
+			std::map<sockaddr_info_t, peer_info_t>::iterator it;
 			char buffer_mac[32];
-			struct sockaddr dest_addr;
+			sockaddr_info_t dest_addr;
 			peer_info_t *peer_info;
-			struct sockaddr_in *sin;
-			struct sockaddr client_address = *get_request_address();
+			sockaddr_info_t client_address;
+
+			memset(&client_address, 0, sizeof(client_address));
+
+			client_address.domain = get_domain();
+			client_address.addr_size = *get_request_address_size();
+			memcpy(&client_address.addr, get_request_address(), client_address.addr_size);
 
 			if(total_size != size) {
 				l->printf("total_size:%d, frame size:%d\n", total_size, size);
@@ -265,21 +280,20 @@ void tun_socket_notifier::request_process(request_t *request)
 				dest_addr = it->first;
 				peer_info = &it->second;
 
-				sin = (struct sockaddr_in *)&dest_addr;
-				inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+				address_string = get_address_string(dest_addr.domain, (struct sockaddr *)&dest_addr.addr, &dest_addr.addr_size);
 
 				if(unicast_frame == 0) {
 					if(it == settings->map_clients.find(client_address)) {
-						l->printf("skip relay frame to source client:%s\n", buffer);
+						l->printf("skip relay frame to source client:%s\n", address_string.c_str());
 						continue;
 					}
 
-					l->printf("relay frame to %s, frame mac:%s\n", buffer, buffer_mac);
-					ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+					l->printf("relay frame to %s, frame mac:%s\n", address_string.c_str(), buffer_mac);
+					ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.addr, dest_addr.addr_size);
 				} else {
 					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
-						l->printf("relay frame to %s, frame mac:%s\n", buffer, buffer_mac);
-						ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, &dest_addr, sizeof(struct sockaddr));
+						l->printf("relay frame to %s, frame mac:%s\n", address_string.c_str(), buffer_mac);
+						ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.addr, dest_addr.addr_size);
 						found = 1;
 						break;
 					}
@@ -393,11 +407,11 @@ void tun_socket_notifier::check_client()
 {
 	settings *settings = settings::get_instance();
 	util_log *l = util_log::get_instance();
-	std::map<struct sockaddr, peer_info_t, sockaddr_less_then>::iterator it;
-	std::vector<struct sockaddr> invalid_address;
-	std::vector<struct sockaddr>::iterator it_address;
+	std::map<sockaddr_info_t, peer_info_t>::iterator it;
+	std::vector<sockaddr_info_t> invalid_address;
+	std::vector<sockaddr_info_t>::iterator it_address;
 	peer_info_t peer_info;
-	struct sockaddr address;
+	sockaddr_info_t address;
 	time_t current_time = time(NULL);
 
 	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
@@ -410,14 +424,12 @@ void tun_socket_notifier::check_client()
 	}
 
 	for(it_address = invalid_address.begin(); it_address != invalid_address.end(); it_address++) {
-		char buffer[32];
-		struct sockaddr_in *sin;
+		std::string address_string;
 
 		settings->map_clients.erase(address);
 
-		sin = (struct sockaddr_in *)&address;
-		inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
+		address_string = get_address_string(address.domain, (struct sockaddr *)&address.addr, &address.addr_size);
 
-		l->printf("remove inactive client:%s!\n", buffer);
+		l->printf("remove inactive client:%s!\n", address_string.c_str());
 	}
 }

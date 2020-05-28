@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年05月28日 星期四 10时40分07秒
+ *   修改日期：2020年05月28日 星期四 17时02分19秒
  *   描    述：
  *
  *================================================================*/
@@ -16,6 +16,7 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "net/net_utils.h"
 
 socket_client_notifier::socket_client_notifier(client *c, unsigned int events) : tun_socket_notifier(c->get_fd(), events)
 {
@@ -110,11 +111,10 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 int socket_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
 {
 	util_log *l = util_log::get_instance();
-	struct sockaddr_in *sin = (struct sockaddr_in *)address;
 	char buffer[32];
 	int ret = -1;
+	std::string address_string = get_address_string(get_domain(), address, &addr_size);
 
-	inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	switch(m_c->get_type()) {
@@ -136,7 +136,7 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 		//l->printf("%8s %d bytes to %s:%d\n", "send", ret, buffer, htons(sin->sin_port));
 		//l->dump((const char *)request, ret);
 	} else {
-		l->printf("sendto %s:%d %s\n", buffer, htons(sin->sin_port), strerror(errno));
+		l->printf("sendto %s %s\n", buffer, address_string.c_str(), strerror(errno));
 		ret = -1;
 	}
 
@@ -146,6 +146,16 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 struct sockaddr *socket_client_notifier::get_request_address()
 {
 	return m_c->get_server_address();
+}
+
+socklen_t *socket_client_notifier::get_request_address_size()
+{
+	return m_c->get_server_address_size();
+}
+
+int socket_client_notifier::get_domain()
+{
+	return m_c->get_domain();
 }
 
 void socket_client_notifier::reply_tun_info()

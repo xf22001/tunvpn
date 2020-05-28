@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年05月28日 星期四 10时35分54秒
+ *   修改日期：2020年05月28日 星期四 17时32分22秒
  *   描    述：
  *
  *================================================================*/
@@ -18,15 +18,20 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "net/net_utils.h"
 
-socket_server_client_notifier::socket_server_client_notifier(struct sockaddr *sockaddr, std::string client_address, int fd, unsigned int events) : tun_socket_notifier(fd, events)
+socket_server_client_notifier::socket_server_client_notifier(int domain, struct sockaddr *address, socklen_t *address_size, std::string client_address, int fd, unsigned int events) : tun_socket_notifier(fd, events)
 {
 	util_log *l = util_log::get_instance();
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	m_fd = fd;
+	m_domain = domain;
 	m_address_string = client_address;
-	m_address = *sockaddr;
+	m_address_size = *address_size;
+	memset(&m_address, 0, sizeof(m_address));
+	memcpy(&m_address, address, m_address_size);
+
 	add_loop();
 }
 
@@ -92,7 +97,17 @@ std::string socket_server_client_notifier::get_request_address_string()
 
 struct sockaddr *socket_server_client_notifier::get_request_address()
 {
-	return &m_address;
+	return (struct sockaddr *)&m_address;
+}
+
+socklen_t *socket_server_client_notifier::get_request_address_size()
+{
+	return &m_address_size;
+}
+
+int socket_server_client_notifier::get_domain()
+{
+	return m_domain;
 }
 
 void socket_server_client_notifier::reply_tun_info()
@@ -100,7 +115,7 @@ void socket_server_client_notifier::reply_tun_info()
 	settings *settings = settings::get_instance();
 
 	if(settings->tun != NULL) {
-		int ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), &m_address, sizeof(struct sockaddr));
+		int ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), (struct sockaddr *)&m_address, m_address_size);
 
 		if(ret <= 0) {
 		}
@@ -110,19 +125,17 @@ void socket_server_client_notifier::reply_tun_info()
 int socket_server_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
 {
 	util_log *l = util_log::get_instance();
-	struct sockaddr_in *sin = (struct sockaddr_in *)address;
-	char buffer[32];
 	int ret = -1;
+	std::string address_string = get_address_string(get_domain(), address, &addr_size);
 
-	inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	ret = write(m_fd, request, size);
 
 	if(ret > 0) {
-		//l->printf("%8s %d bytes to %s:%d\n", "send", ret, buffer, htons(sin->sin_port));
+		//l->printf("%8s %d bytes to %s\n", "send", ret, address_string.c_str());
 	} else {
-		l->printf("sendto %s:%d %s\n", buffer, htons(sin->sin_port), strerror(errno));
+		l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	}
 
 	return ret;
@@ -167,6 +180,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 					tun_socket_notifier *notifier;
 					std::string client_address_string;
 					struct sockaddr *client_address;
+					socklen_t *client_address_size;
 
 					ret = accept(fd, address, addr_size);
 
@@ -178,10 +192,11 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 					client_fd = ret;
 					client_address_string = m_s->get_client_address_string();
 					client_address = m_s->get_client_address();
+					client_address_size = m_s->get_client_address_size();
 
 					l->printf("accept fd:%8d from %s\n", client_fd, client_address_string.c_str());
 
-					notifier = new socket_server_client_notifier(client_address, client_address_string, client_fd, POLLIN);
+					notifier = new socket_server_client_notifier(get_domain(), client_address, client_address_size, client_address_string, client_fd, POLLIN);
 					settings->map_notifier[client_fd] = notifier;
 
 					ret = 0;
@@ -235,11 +250,9 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 int socket_server_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
 {
 	util_log *l = util_log::get_instance();
-	struct sockaddr_in *sin = (struct sockaddr_in *)address;
-	char buffer[32];
 	int ret = -1;
+	std::string address_string = get_address_string(get_domain(), address, &addr_size);
 
-	inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	switch(m_s->get_type()) {
@@ -258,9 +271,9 @@ int socket_server_notifier::send_request(char *request, int size, struct sockadd
 	}
 
 	if(ret > 0) {
-		//l->printf("%8s %d bytes to %s:%d\n", "send", ret, buffer, htons(sin->sin_port));
+		//l->printf("%8s %d bytes to %s\n", "send", ret, address_string.c_str());
 	} else {
-		l->printf("sendto %s:%d %s\n", buffer, htons(sin->sin_port), strerror(errno));
+		l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	}
 
 	return ret;
@@ -270,6 +283,17 @@ struct sockaddr *socket_server_notifier::get_request_address()
 {
 	return m_s->get_client_address();
 }
+
+socklen_t *socket_server_notifier::get_request_address_size()
+{
+	return m_s->get_client_address_size();
+}
+
+int socket_server_notifier::get_domain()
+{
+	return m_s->get_domain();
+}
+
 
 void socket_server_notifier::reply_tun_info()
 {
