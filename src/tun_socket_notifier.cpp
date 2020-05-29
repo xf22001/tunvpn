@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年05月28日 星期四 17时03分16秒
+ *   修改日期：2020年05月29日 星期五 08时21分25秒
  *   描    述：
  *
  *================================================================*/
@@ -201,18 +201,24 @@ void tun_socket_notifier::request_process(request_t *request)
 			reply_tun_info();
 
 			if(log) {
-				socklen_t addr_size = sizeof(struct sockaddr_in);
+				char address_buffer[128];
+				struct sockaddr_in *sin;
+
 				l->printf("update client!\n");
 				address_string = get_address_string(client_address.domain, (struct sockaddr *)&client_address.addr, &client_address.addr_size);
 				l->printf("client_address:%s\n", address_string.c_str());
 
 				l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
 
-				address_string = get_address_string(AF_INET, (struct sockaddr *)&tun_info->ip, &addr_size);
-				l->printf("ip addr:%s\n", address_string.c_str());
+				memset(address_buffer, 0, sizeof(address_buffer));
+				sin = (struct sockaddr_in *)&tun_info->ip;
+				inet_ntop(AF_INET, &sin->sin_addr, address_buffer, sizeof(address_buffer));
+				l->printf("ip addr:%s\n", address_buffer);
 
-				address_string = get_address_string(AF_INET, (struct sockaddr *)&tun_info->netmask, &addr_size);
-				l->printf("netmask:%s\n", address_string.c_str());
+				memset(address_buffer, 0, sizeof(address_buffer));
+				sin = (struct sockaddr_in *)&tun_info->netmask;
+				inet_ntop(AF_INET, &sin->sin_addr, address_buffer, sizeof(address_buffer));
+				l->printf("netmask:%s\n", address_buffer);
 			}
 		}
 		break;
