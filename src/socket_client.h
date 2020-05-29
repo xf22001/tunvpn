@@ -36,7 +36,7 @@ public:
 	socket_client_notifier(client *c, unsigned int events = POLLIN);
 	virtual ~socket_client_notifier();
 	int handle_event(int fd, unsigned int events);
-	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
+	int send_request(char *request, int size, struct sockaddr *address, socklen_t address_size);
 	struct sockaddr *get_request_address();
 	socklen_t *get_request_address_size();
 	int get_domain();

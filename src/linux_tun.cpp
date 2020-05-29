@@ -72,7 +72,7 @@ int linux_tun::update_tun_info()
 		return ret;
 	}
 
-	//mac addr
+	//mac address
 	ret = tun_ioctl(sockfd, SIOCGIFHWADDR);
 
 	if(ret < 0) {
@@ -90,7 +90,7 @@ int linux_tun::update_tun_info()
 
 	memcpy(tun_info.mac_addr, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
 
-	//ip addr
+	//ip address
 	sin = (struct sockaddr_in *)&tun_info.ip;
 	ret = tun_ioctl(sockfd, SIOCGIFADDR);
 
@@ -103,7 +103,7 @@ int linux_tun::update_tun_info()
 	//l->dump((const char *)sin, sizeof(struct sockaddr_in));
 	inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
-	l->printf("ip addr:%s\n", buffer);
+	l->printf("ip address:%s\n", buffer);
 
 	//ip mask
 	sin = (struct sockaddr_in *)&tun_info.netmask;

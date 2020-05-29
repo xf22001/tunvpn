@@ -45,7 +45,7 @@ public:
 	socklen_t *get_request_address_size();
 	int get_domain();
 	void reply_tun_info();
-	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
+	int send_request(char *request, int size, struct sockaddr *address, socklen_t address_size);
 };
 
 class socket_server_notifier : public tun_socket_notifier
@@ -63,7 +63,7 @@ public:
 	socklen_t *get_request_address_size();
 	int get_domain();
 	void reply_tun_info();
-	int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
+	int send_request(char *request, int size, struct sockaddr *address, socklen_t address_size);
 };
 
 int start_serve(std::string server_port, trans_protocol_type_t protocol);

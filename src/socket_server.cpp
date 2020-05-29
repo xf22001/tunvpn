@@ -122,11 +122,11 @@ void socket_server_client_notifier::reply_tun_info()
 	}
 }
 
-int socket_server_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
+int socket_server_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &addr_size);
+	std::string address_string = get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -164,7 +164,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	struct sockaddr *address = m_s->get_client_address();
-	socklen_t *addr_size = m_s->get_client_address_size();
+	socklen_t *address_size = m_s->get_client_address_size();
 
 	if((events & get_events()) == 0) {
 		l->printf("server:events:%08x\n", events);
@@ -182,7 +182,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 					struct sockaddr *client_address;
 					socklen_t *client_address_size;
 
-					ret = accept(fd, address, addr_size);
+					ret = accept(fd, address, address_size);
 
 					if(ret < 0) {
 						l->printf("accept %s\n", strerror(errno));
@@ -206,7 +206,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 				case SOCK_DGRAM: {
 					std::string client_address;
 
-					ret = recvfrom(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received, 0, address, addr_size);
+					ret = recvfrom(fd, rx_buffer + rx_buffer_received, SOCKET_TXRX_BUFFER_SIZE - rx_buffer_received, 0, address, address_size);
 					client_address = m_s->get_client_address_string();
 
 					if(ret == 0) {
@@ -220,7 +220,7 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 						//l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
 						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 						//l->dump((const char *)rx_buffer, ret);
-						//ret = sendto(fd, rx_buffer, ret, 0,  address,  *addr_size);
+						//ret = sendto(fd, rx_buffer, ret, 0,  address,  *address_size);
 
 						//if(ret > 0) {
 						//	l->printf("%8s %d bytes to %s\n", "send", ret, client_address.c_str());
@@ -247,11 +247,11 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 	return ret;
 }
 
-int socket_server_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
+int socket_server_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &addr_size);
+	std::string address_string = get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -262,7 +262,7 @@ int socket_server_notifier::send_request(char *request, int size, struct sockadd
 		break;
 
 		case SOCK_DGRAM: {
-			ret = sendto(m_s->get_fd(), request, size, 0, address, addr_size);
+			ret = sendto(m_s->get_fd(), request, size, 0, address, address_size);
 		}
 		break;
 

@@ -75,14 +75,14 @@ void input_notifier::process_message(int size)
 				l->printf("%-32s\t%-10s\t%-20s\n",
 				          "remote ip",
 				          "peer ip",
-				          "mac addr");
+				          "mac address");
 
 				for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
 					struct sockaddr_in *sin;
 					remote_addr = it->first;
 					peer_info = &it->second;
 
-					address_string_remote = get_address_string(remote_addr.domain, (struct sockaddr *)&remote_addr.addr, &remote_addr.addr_size);
+					address_string_remote = get_address_string(remote_addr.domain, (struct sockaddr *)&remote_addr.address, &remote_addr.address_size);
 					memset(address_buffer_peer, 0, sizeof(address_buffer_peer));
 					sin = (struct sockaddr_in *)&peer_info->tun_info.ip;
 					inet_ntop(AF_INET, &sin->sin_addr, address_buffer_peer, sizeof(address_buffer_peer));

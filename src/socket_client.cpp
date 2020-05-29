@@ -108,12 +108,12 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 	return ret;
 }
 
-int socket_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size)
+int socket_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
 	char buffer[32];
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &addr_size);
+	std::string address_string = get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -124,7 +124,7 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 		break;
 
 		case SOCK_DGRAM: {
-			ret = sendto(m_c->get_fd(), request, size, 0, address, addr_size);
+			ret = sendto(m_c->get_fd(), request, size, 0, address, address_size);
 		}
 		break;
 

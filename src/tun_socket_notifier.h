@@ -64,9 +64,9 @@ public:
 	tun_socket_notifier(int fd, unsigned int events = POLLIN);
 	virtual ~tun_socket_notifier();
 	unsigned char calc_crc8(void *data, size_t size);
-	int add_request_data(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t addr_size);
+	int add_request_data(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t address_size);
 	int send_request_data();
-	int chunk_sendto(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t addr_size);
+	int chunk_sendto(tun_socket_fn_t fn, void *data, size_t size, struct sockaddr *address, socklen_t address_size);
 	void process_message();
 	int encrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size);
 	int decrypt_request(unsigned char *in_data, int in_size, unsigned char *out_data, int *out_size);
@@ -76,7 +76,7 @@ public:
 	virtual struct sockaddr *get_request_address();
 	virtual socklen_t *get_request_address_size();
 	virtual int get_domain();
-	virtual int send_request(char *request, int size, struct sockaddr *address, socklen_t addr_size);
+	virtual int send_request(char *request, int size, struct sockaddr *address, socklen_t address_size);
 };
 
 #endif //_TUN_SOCKET_NOTIFIER_H

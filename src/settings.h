@@ -41,22 +41,22 @@ typedef struct {
 
 typedef struct {
 	int domain;
-	struct sockaddr_storage addr;
-	socklen_t addr_size;
+	struct sockaddr_storage address;
+	socklen_t address_size;
 } sockaddr_info_t;
 
 struct sockaddr_info_less_then {
 	bool operator() (const sockaddr_info_t &sockaddr_info1, const sockaddr_info_t &sockaddr_info2) const
 	{
-		if(sockaddr_info1.addr_size < sockaddr_info2.addr_size) {
+		if(sockaddr_info1.address_size < sockaddr_info2.address_size) {
 			return true;
 		}
 
-		if(sockaddr_info1.addr_size > sockaddr_info2.addr_size) {
+		if(sockaddr_info1.address_size > sockaddr_info2.address_size) {
 			return false;
 		}
 
-		if(memcmp(&sockaddr_info1.addr, &sockaddr_info2.addr, sockaddr_info1.addr_size) < 0) {
+		if(memcmp(&sockaddr_info1.address, &sockaddr_info2.address, sockaddr_info1.address_size) < 0) {
 			return true;
 		}
 

@@ -99,7 +99,7 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 
 		if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
 			//l->printf("send fram to %s, frame mac:%s\n", buffer, buffer_mac);
-			ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.addr, dest_addr.addr_size);
+			ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 			found = 1;
 			break;
 		}
@@ -119,7 +119,7 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 
 		//l->printf("broadcast fram to %s, fram mac:%s\n", buffer, buffer_mac);
 
-		ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.addr, dest_addr.addr_size);
+		ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 	}
 
 	return ret;
