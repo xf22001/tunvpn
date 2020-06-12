@@ -6,7 +6,7 @@
  *   文件名称：console.h
  *   创 建 者：肖飞
  *   创建日期：2019年12月02日 星期一 12时49分56秒
- *   修改日期：2019年12月02日 星期一 12时53分17秒
+ *   修改日期：2020年06月12日 星期五 11时22分14秒
  *   描    述：
  *
  *================================================================*/
@@ -22,6 +22,7 @@ extern "C"
 #endif
 
 #include "event_loop.h"
+#include "net/net_base.h"
 
 #define CONSOLE_BUFFER_SIZE 4096
 
@@ -31,6 +32,7 @@ private:
 	char input_buffer[CONSOLE_BUFFER_SIZE];
 
 	input_notifier();
+	class net_base net_base;
 public:
 	input_notifier(int fd, unsigned int events = POLLIN);
 	virtual ~input_notifier();

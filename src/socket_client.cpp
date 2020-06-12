@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年05月28日 星期四 17时02分19秒
+ *   修改日期：2020年06月12日 星期五 11时33分01秒
  *   描    述：
  *
  *================================================================*/
@@ -16,7 +16,6 @@
 
 #include "util_log.h"
 #include "settings.h"
-#include "net/net_utils.h"
 
 socket_client_notifier::socket_client_notifier(client *c, unsigned int events) : tun_socket_notifier(c->get_fd(), events)
 {
@@ -113,7 +112,7 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 	util_log *l = util_log::get_instance();
 	char buffer[32];
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &address_size);
+	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -201,9 +200,9 @@ int start_client(std::string host, std::string server_port, trans_protocol_type_
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	if(protocol == TRANS_PROTOCOL_TCP) {
-		c = new client(AF_INET, SOCK_STREAM, IPPROTO_IP, host, server_port);
+		c = new client(AF_UNSPEC, SOCK_STREAM, IPPROTO_IP, host, server_port);
 	} else if(protocol == TRANS_PROTOCOL_UDP) {
-		c = new client(AF_INET, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
+		c = new client(AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
 	}
 
 	if(c == NULL) {

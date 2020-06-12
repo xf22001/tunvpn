@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2020年03月12日 星期四 09时01分16秒
+ *   修改日期：2020年06月12日 星期五 11时41分03秒
  *   描    述：
  *
  *================================================================*/
@@ -123,10 +123,10 @@ int settings::get_app_settings_from_configuration(configure &cfg)
 		ip4_config = values.at(0);
 	}
 
-	values = cfg.get("app", "server_port");
+	values = cfg.get("app", "server_addr");
 
 	if(values.size() > 0) {
-		server_port = values.at(0);
+		server_addr = values;
 	}
 
 	values = cfg.get("app", "peer_addr");

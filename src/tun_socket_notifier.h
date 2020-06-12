@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2020年05月28日 星期四 17时00分31秒
+ *   修改日期：2020年06月12日 星期五 11时20分56秒
  *   描    述：
  *
  *================================================================*/
@@ -30,6 +30,7 @@ extern "C"
 #include "os_util.h"
 #include "event_loop.h"
 #include "request.h"
+#include "net/net_base.h"
 
 #define MAX_REQUEST_PACKET_SIZE SOCKET_TXRX_BUFFER_SIZE
 
@@ -60,6 +61,7 @@ protected:
 	char tx_buffer[SOCKET_TXRX_BUFFER_SIZE];
 	char rx_buffer[SOCKET_TXRX_BUFFER_SIZE];
 	int rx_buffer_received;
+	class net_base net_base;
 public:
 	tun_socket_notifier(int fd, unsigned int events = POLLIN);
 	virtual ~tun_socket_notifier();

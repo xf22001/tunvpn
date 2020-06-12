@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年06月12日 星期五 09时42分13秒
+ *   修改日期：2020年06月12日 星期五 11时20分10秒
  *   描    述：
  *
  *================================================================*/
@@ -18,7 +18,6 @@
 
 #include "util_log.h"
 #include "settings.h"
-#include "net/net_utils.h"
 
 tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
@@ -205,7 +204,7 @@ void tun_socket_notifier::request_process(request_t *request)
 				struct sockaddr_in *sin;
 
 				l->printf("update client!\n");
-				address_string = get_address_string(client_address.domain, (struct sockaddr *)&client_address.address, &client_address.address_size);
+				address_string = net_base.get_address_string(client_address.domain, (struct sockaddr *)&client_address.address, &client_address.address_size);
 				l->printf("client_address:%s\n", address_string.c_str());
 
 				l->dump((const char *)&tun_info->mac_addr, IFHWADDRLEN);
@@ -286,7 +285,7 @@ void tun_socket_notifier::request_process(request_t *request)
 				dest_addr = it->first;
 				peer_info = &it->second;
 
-				address_string = get_address_string(dest_addr.domain, (struct sockaddr *)&dest_addr.address, &dest_addr.address_size);
+				address_string = net_base.get_address_string(dest_addr.domain, (struct sockaddr *)&dest_addr.address, &dest_addr.address_size);
 
 				if(unicast_frame == 0) {
 					if(it == settings->map_clients.find(client_address)) {
@@ -434,7 +433,7 @@ void tun_socket_notifier::check_client()
 
 		settings->map_clients.erase(address);
 
-		address_string = get_address_string(address.domain, (struct sockaddr *)&address.address, &address.address_size);
+		address_string = net_base.get_address_string(address.domain, (struct sockaddr *)&address.address, &address.address_size);
 
 		l->printf("remove inactive client:%s!\n", address_string.c_str());
 	}

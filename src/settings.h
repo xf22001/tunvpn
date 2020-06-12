@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年05月28日 星期四 16时38分15秒
+ *   修改日期：2020年06月12日 星期五 11时40分00秒
  *   描    述：
  *
  *================================================================*/
@@ -80,7 +80,7 @@ public:
 	//configuration
 	std::string tap_name;
 	std::string ip4_config;
-	std::string server_port;
+	std::vector<std::string> server_addr;
 	std::vector<std::string> peer_addr;
 
 	//data

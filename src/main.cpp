@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年05月28日 星期四 10时36分55秒
+ *   修改日期：2020年06月12日 星期五 11时44分03秒
  *   描    述：
  *
  *================================================================*/
@@ -57,7 +57,6 @@ static void start_peer_client(trans_protocol_type_t protocol)
 	util_log *l = util_log::get_instance();
 
 	std::vector<std::string>::iterator it;
-	std::map<int, std::string>::iterator it_host;
 
 	for(it = settings->peer_addr.begin(); it != settings->peer_addr.end(); it++) {
 		std::string ip_port = *it;
@@ -129,8 +128,26 @@ int start_tun()
 
 	ret = tun->update_tun_info();
 
-	if(settings->server_port.size() > 0) {
-		start_serve(settings->server_port, TRANS_PROTOCOL_UDP);
+	if(settings->server_addr.size() > 0) {
+		std::vector<std::string>::iterator it;
+
+		for(it = settings->server_addr.begin(); it != settings->server_addr.end(); it++) {
+			std::string ip_port = *it;
+			std::string host;
+			std::string port;
+			std::vector<std::string> matched_list;
+			std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+			regexp r;
+
+			matched_list = r.match(ip_port, pattern);
+
+			if(matched_list.size() == 3) {
+				host = matched_list.at(1);
+				port = matched_list.at(2);
+
+				start_serve(host, port, TRANS_PROTOCOL_UDP);
+			}
+		}
 	}
 
 	if(settings->peer_addr.size() > 0) {

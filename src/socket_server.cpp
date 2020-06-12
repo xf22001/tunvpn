@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年05月28日 星期四 17时32分22秒
+ *   修改日期：2020年06月12日 星期五 11时34分08秒
  *   描    述：
  *
  *================================================================*/
@@ -18,7 +18,6 @@
 
 #include "util_log.h"
 #include "settings.h"
-#include "net/net_utils.h"
 
 socket_server_client_notifier::socket_server_client_notifier(int domain, struct sockaddr *address, socklen_t *address_size, std::string client_address, int fd, unsigned int events) : tun_socket_notifier(fd, events)
 {
@@ -126,7 +125,7 @@ int socket_server_client_notifier::send_request(char *request, int size, struct 
 {
 	util_log *l = util_log::get_instance();
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &address_size);
+	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -251,7 +250,7 @@ int socket_server_notifier::send_request(char *request, int size, struct sockadd
 {
 	util_log *l = util_log::get_instance();
 	int ret = -1;
-	std::string address_string = get_address_string(get_domain(), address, &address_size);
+	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
 
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
@@ -321,7 +320,7 @@ int socket_server_notifier::do_timeout()
 	return ret;
 }
 
-int start_serve(std::string server_port, trans_protocol_type_t protocol)
+int start_serve(std::string host, std::string server_port, trans_protocol_type_t protocol)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
@@ -332,9 +331,9 @@ int start_serve(std::string server_port, trans_protocol_type_t protocol)
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	if(protocol == TRANS_PROTOCOL_TCP) {
-		s = new server(1, AF_INET, SOCK_STREAM, IPPROTO_IP, "0.0.0.0", server_port);
+		s = new server(1, AF_INET, SOCK_STREAM, IPPROTO_IP, host, server_port);
 	} else if(protocol == TRANS_PROTOCOL_UDP) {
-		s = new server(1, AF_INET, SOCK_DGRAM, IPPROTO_UDP, "0.0.0.0", server_port);
+		s = new server(1, AF_INET, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
 	}
 
 	if(s == NULL) {
