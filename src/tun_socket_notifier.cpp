@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年05月29日 星期五 08时21分25秒
+ *   修改日期：2020年06月12日 星期五 09时42分13秒
  *   描    述：
  *
  *================================================================*/
@@ -345,11 +345,11 @@ void tun_socket_notifier::process_message()
 	int request_size = 0;
 	int left = rx_buffer_received;
 
-	//l->printf("net client got %d bytes\n", rx_buffer_received);
-	//l->dump((const char *)rx_buffer, rx_buffer_received);
+	//l->printf("left %d bytes\n", left);
+	//l->dump((const char *)rx_buffer, left);
 
 	while(left >= (int)sizeof(request_t)) {
-		::request_decode(buffer, rx_buffer_received, &request, &request_size);
+		::request_decode(buffer, left, &request, &request_size);
 		//l->printf("got request_size %d\n", request_size);
 
 		if(request != NULL) {//可能有效包
