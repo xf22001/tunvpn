@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年06月12日 星期五 11时34分08秒
+ *   修改日期：2020年06月13日 星期六 16时18分35秒
  *   描    述：
  *
  *================================================================*/
@@ -37,21 +37,23 @@ socket_server_client_notifier::socket_server_client_notifier(int domain, struct 
 socket_server_client_notifier::~socket_server_client_notifier()
 {
 	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
+
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 	remove_loop();
+
+	settings->map_notifier.erase(m_fd);
+	close(m_fd);
+	l->printf("close fd:%8d from %s\n", m_fd, m_address_string.c_str());
 }
 
 int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
-	settings *settings = settings::get_instance();
 
 	if((events & get_events()) == 0) {
 		l->printf("error:events:%08x\n", events);
-		close(fd);
-		settings->map_notifier.erase(fd);
-		delete this;
 	} else {
 		if((events & POLLOUT) != 0) {
 			send_request_data();
@@ -62,23 +64,11 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 
 			if(ret == 0) {
 				l->printf("server read no data, may be client %s closed!\n", m_address_string.c_str());
-				close(fd);
-				settings->map_notifier.erase(fd);
 				delete this;
 				ret = 0;
 			} else if(ret > 0) {
 				//l->printf("%8s %d bytes from %s\n", "received", ret, m_address_string.c_str());
 				decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
-				//l->dump((const char *)rx_buffer, ret);
-				//ret = write(fd, rx_buffer, ret);
-
-				//if(ret <= 0) {
-				//	l->printf("write %s\n", strerror(errno));
-				//} else {
-				//	l->printf("%8s %d bytes to %s\n", "send", ret, m_address_string.c_str());
-				//	l->dump((const char *)rx_buffer, ret);
-				//}
-
 				rx_buffer_received += ret;
 				process_message();
 				ret = 0;
@@ -125,15 +115,17 @@ int socket_server_client_notifier::send_request(char *request, int size, struct 
 {
 	util_log *l = util_log::get_instance();
 	int ret = -1;
-	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
-
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	ret = write(m_fd, request, size);
 
 	if(ret > 0) {
-		//l->printf("%8s %d bytes to %s\n", "send", ret, address_string.c_str());
+		//std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+
+		//l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	} else {
+		std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+
 		l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	}
 
@@ -146,15 +138,19 @@ socket_server_notifier::socket_server_notifier(server *s, unsigned int events) :
 
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
-	set_timeout(1, 0);
-
 	m_s = s;
 	add_loop();
+
+	set_timeout(1, 0);
 }
 
 socket_server_notifier::~socket_server_notifier()
 {
+	settings *settings = settings::get_instance();
+
 	remove_loop();
+	settings->map_notifier.erase(m_s->get_fd());
+	delete m_s;
 }
 
 int socket_server_notifier::handle_event(int fd, unsigned int events)
@@ -210,10 +206,6 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 
 					if(ret == 0) {
 						l->printf("server read no data, may be client %s closed!\n", client_address.c_str());
-						//close(fd);
-						//settings->map_notifier.erase(fd);
-						//delete this;
-						//try reconnect~~~
 						ret = 0;
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
@@ -256,7 +248,7 @@ int socket_server_notifier::send_request(char *request, int size, struct sockadd
 
 	switch(m_s->get_type()) {
 		case SOCK_STREAM: {
-			ret = write(m_s->get_fd(), request, size);
+			l->printf("%s:%s:%d bug!!! send to connect socket!\n", __FILE__, __func__, __LINE__);
 		}
 		break;
 
@@ -311,9 +303,11 @@ int socket_server_notifier::do_timeout()
 	//util_log *l = util_log::get_instance();
 	int ret = -1;
 
-	check_client();
+	//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	set_timeout(3, 0);
+
+	check_client();
 
 	ret = 0;
 
@@ -331,9 +325,9 @@ int start_serve(std::string host, std::string server_port, trans_protocol_type_t
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	if(protocol == TRANS_PROTOCOL_TCP) {
-		s = new server(1, AF_INET, SOCK_STREAM, IPPROTO_IP, host, server_port);
+		s = new server(1, AF_UNSPEC, SOCK_STREAM, IPPROTO_IP, host, server_port);
 	} else if(protocol == TRANS_PROTOCOL_UDP) {
-		s = new server(1, AF_INET, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
+		s = new server(1, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP, host, server_port);
 	}
 
 	if(s == NULL) {

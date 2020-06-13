@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年06月12日 星期五 11时33分01秒
+ *   修改日期：2020年06月13日 星期六 16时14分54秒
  *   描    述：
  *
  *================================================================*/
@@ -30,21 +30,20 @@ socket_client_notifier::socket_client_notifier(client *c, unsigned int events) :
 socket_client_notifier::~socket_client_notifier()
 {
 	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 	remove_loop();
+	settings->remove_peer_info(m_c->get_fd());
+	delete m_c;
 }
 
 int socket_client_notifier::handle_event(int fd, unsigned int events)
 {
 	int ret = -1;
 	util_log *l = util_log::get_instance();
-	settings *settings = settings::get_instance();
 
 	if((events & get_events()) == 0) {
 		l->printf("client:events:%08x\n", events);
-		close(fd);
-		settings->remove_peer_info(fd);
-		delete this;
 	} else {
 		if((events & POLLOUT) != 0) {
 			send_request_data();
@@ -57,9 +56,6 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 
 					if(ret == 0) {
 						l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
-						//m_c->do_connect();
-						close(fd);
-						settings->remove_peer_info(fd);
 						delete this;
 						ret = 0;
 					} else if(ret > 0) {
@@ -81,9 +77,6 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 
 					if (ret == 0) {
 						l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
-						//close(fd);
-						//settings->map_clients.erase(fd);
-						//delete this;
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
 						//l->dump((const char *)buffer, ret);
@@ -112,8 +105,6 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 	util_log *l = util_log::get_instance();
 	char buffer[32];
 	int ret = -1;
-	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
-
 	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	switch(m_c->get_type()) {
@@ -132,9 +123,11 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 	}
 
 	if(ret > 0) {
-		//l->printf("%8s %d bytes to %s:%d\n", "send", ret, buffer, htons(sin->sin_port));
-		//l->dump((const char *)request, ret);
+		//std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+		//l->printf("%8s %d bytes to %s\n", "send", ret, address_string.c_str());
 	} else {
+		std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+
 		l->printf("sendto %s %s\n", buffer, address_string.c_str(), strerror(errno));
 		ret = -1;
 	}
@@ -167,6 +160,8 @@ int socket_client_notifier::do_timeout()
 	settings *settings = settings::get_instance();
 	int ret = -1;
 
+	//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
 	if(settings->tun != NULL) {
 		ret = add_request_data(FN_HELLO, settings->tun->get_tun_info(), sizeof(tun_info_t), m_c->get_server_address(), *m_c->get_server_address_size());
 
@@ -175,13 +170,11 @@ int socket_client_notifier::do_timeout()
 		}
 	}
 
-	check_client();
-
 	set_timeout(3, 0);
 
+	check_client();
+
 	if(time(NULL) - update_time >= CLIENT_VALIDE_TIMEOUT) {
-		close(m_c->get_fd());
-		settings->remove_peer_info(m_c->get_fd());
 		delete this;
 	}
 

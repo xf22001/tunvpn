@@ -6,7 +6,7 @@
  *   文件名称：tap_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月01日 星期日 09时29分18秒
- *   修改日期：2020年05月28日 星期四 16时25分12秒
+ *   修改日期：2020年06月13日 星期六 13时59分35秒
  *   描    述：
  *
  *================================================================*/
@@ -91,15 +91,22 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 	frame_header = (struct ethhdr *)frame;
 
 	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+		tun_socket_notifier *notifier;
 		dest_addr = it->first;
 		peer_info = &it->second;
+
+		notifier = settings->get_notifier(peer_info->fd);
+
+		if(notifier == NULL) {
+			continue;
+		}
 
 		//sin = (struct sockaddr_in *)&dest_addr;
 		//inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
 		if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
 			//l->printf("send fram to %s, frame mac:%s\n", buffer, buffer_mac);
-			ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
+			ret = notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 			found = 1;
 			break;
 		}
@@ -111,15 +118,22 @@ int tap_notifier::send_tun_frame(char *frame, int size)
 
 	//broadcast
 	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+		tun_socket_notifier *notifier;
 		dest_addr = it->first;
 		peer_info = &it->second;
+
+		notifier = settings->get_notifier(peer_info->fd);
+
+		if(notifier == NULL) {
+			continue;
+		}
 
 		//sin = (struct sockaddr_in *)&dest_addr;
 		//inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer));
 
 		//l->printf("broadcast fram to %s, fram mac:%s\n", buffer, buffer_mac);
 
-		ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
+		ret = notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 	}
 
 	return ret;

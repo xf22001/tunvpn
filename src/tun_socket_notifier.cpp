@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分09秒
- *   修改日期：2020年06月12日 星期五 11时20分10秒
+ *   修改日期：2020年06月13日 星期六 15时30分56秒
  *   描    述：
  *
  *================================================================*/
@@ -32,6 +32,16 @@ tun_socket_notifier::tun_socket_notifier(int fd, unsigned int events) : event_no
 
 tun_socket_notifier::~tun_socket_notifier()
 {
+	util_log *l = util_log::get_instance();
+
+	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
+	while(!queue_request_data.empty()) {
+		request_data_t request_data;
+		request_data = queue_request_data.front();
+		delete request_data.data;
+		queue_request_data.pop();
+	}
 }
 
 unsigned char tun_socket_notifier::calc_crc8(void *data, size_t size)
@@ -61,7 +71,9 @@ int tun_socket_notifier::add_request_data(tun_socket_fn_t fn, void *data, size_t
 {
 	int ret = 0;
 	request_data_t request_data;
-	unsigned char *request_data_data = new unsigned char[size];
+	unsigned char *request_data_data;
+
+	request_data_data = new unsigned char[size];
 
 	if(request_data_data == NULL) {
 		return ret;
@@ -173,10 +185,10 @@ void tun_socket_notifier::request_process(request_t *request)
 	switch(fn) {
 		case FN_HELLO: {
 			tun_info_t *tun_info = (tun_info_t *)(request + 1);
-			peer_info_t peer_info;
 			sockaddr_info_t client_address;
 			std::map<sockaddr_info_t, peer_info_t>::iterator it;
 			bool log = false;
+			peer_info_t peer_info;
 
 			memset(&client_address, 0, sizeof(client_address));
 
@@ -184,19 +196,18 @@ void tun_socket_notifier::request_process(request_t *request)
 			client_address.address_size = *get_request_address_size();
 			memcpy(&client_address.address, get_request_address(), client_address.address_size);
 
-			peer_info.tun_info = *tun_info;
-			peer_info.notifier = this;
-			peer_info.time = time(NULL);
-
 			it = settings->map_clients.find(client_address);
 
 			if(it == settings->map_clients.end()) {
+				peer_info.tun_info = *tun_info;
+				peer_info.fd = this->get_fd();
+				peer_info.time = time(NULL);
+				settings->map_clients[client_address] = peer_info;
 				log = true;
 			} else {
-				//settings->map_clients.erase(it);
+				it->second.time = time(NULL);
 			}
 
-			settings->map_clients[client_address] = peer_info;
 			reply_tun_info();
 
 			if(log) {
@@ -282,8 +293,15 @@ void tun_socket_notifier::request_process(request_t *request)
 			         frame_header->h_dest[5]);
 
 			for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
+				tun_socket_notifier *notifier;
 				dest_addr = it->first;
 				peer_info = &it->second;
+
+				notifier = settings->get_notifier(peer_info->fd);
+
+				if(notifier == NULL) {
+					continue;
+				}
 
 				address_string = net_base.get_address_string(dest_addr.domain, (struct sockaddr *)&dest_addr.address, &dest_addr.address_size);
 
@@ -294,11 +312,11 @@ void tun_socket_notifier::request_process(request_t *request)
 					}
 
 					l->printf("relay frame to %s, frame mac:%s\n", address_string.c_str(), buffer_mac);
-					ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
+					ret = notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 				} else {
 					if(memcmp(frame_header->h_dest, peer_info->tun_info.mac_addr, IFHWADDRLEN) == 0) {
 						l->printf("relay frame to %s, frame mac:%s\n", address_string.c_str(), buffer_mac);
-						ret = peer_info->notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
+						ret = notifier->add_request_data(FN_FRAME, frame, size, (struct sockaddr *)&dest_addr.address, dest_addr.address_size);
 						found = 1;
 						break;
 					}
@@ -418,6 +436,7 @@ void tun_socket_notifier::check_client()
 	peer_info_t peer_info;
 	sockaddr_info_t address;
 	time_t current_time = time(NULL);
+	std::string address_string;
 
 	for(it = settings->map_clients.begin(); it != settings->map_clients.end(); it++) {
 		address = it->first;
@@ -429,7 +448,7 @@ void tun_socket_notifier::check_client()
 	}
 
 	for(it_address = invalid_address.begin(); it_address != invalid_address.end(); it_address++) {
-		std::string address_string;
+		address = *it_address;
 
 		settings->map_clients.erase(address);
 

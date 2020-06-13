@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年06月12日 星期五 11时44分03秒
+ *   修改日期：2020年06月13日 星期六 15时32分35秒
  *   描    述：
  *
  *================================================================*/
@@ -15,6 +15,7 @@
 #include "util_log.h"
 
 #include <unistd.h>
+#include <signal.h>
 #include "linux_tun.h"
 #include "ifconfig.h"
 #include "settings.h"
@@ -92,7 +93,16 @@ static void start_peer_client(trans_protocol_type_t protocol)
 void connect_thread::func()
 {
 	while(true) {
-		start_peer_client(TRANS_PROTOCOL_UDP);
+		settings *settings = settings::get_instance();
+		trans_protocol_type_t protocol = TRANS_PROTOCOL_UDP;
+
+		if(settings->protocol == "udp") {
+			protocol = TRANS_PROTOCOL_UDP;
+		} else if(settings->protocol == "tcp") {
+			protocol = TRANS_PROTOCOL_TCP;
+		}
+
+		start_peer_client(protocol);
 
 		sleep(3);
 	}
@@ -109,6 +119,13 @@ int start_tun()
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
 	linux_tun *tun = new linux_tun();
+	trans_protocol_type_t protocol = TRANS_PROTOCOL_UDP;
+
+	if(settings->protocol == "udp") {
+		protocol = TRANS_PROTOCOL_UDP;
+	} else if(settings->protocol == "tcp") {
+		protocol = TRANS_PROTOCOL_TCP;
+	}
 
 	settings->tun = tun;
 
@@ -145,7 +162,7 @@ int start_tun()
 				host = matched_list.at(1);
 				port = matched_list.at(2);
 
-				start_serve(host, port, TRANS_PROTOCOL_UDP);
+				start_serve(host, port, protocol);
 			}
 		}
 	}
@@ -161,6 +178,13 @@ int start_tun()
 	return ret;
 }
 
+/* Catch Signal Handler functio */
+static void signal_callback_handler(int signum)
+{
+
+	printf("Caught signal SIGPIPE %d\n", signum);
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -169,6 +193,9 @@ int main(int argc, char **argv)
 	settings *settings = settings::get_instance();
 
 	loop_thread *th = new loop_thread;
+
+	/* Catch Signal Handler SIGPIPE */
+	signal(SIGPIPE, signal_callback_handler);
 
 	ret = settings->parse_args_from_configuration(argc, argv);
 

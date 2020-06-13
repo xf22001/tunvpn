@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年06月12日 星期五 11时40分00秒
+ *   修改日期：2020年06月13日 星期六 15时13分02秒
  *   描    述：
  *
  *================================================================*/
@@ -35,7 +35,7 @@ extern "C"
 
 typedef struct {
 	tun_info_t tun_info;
-	tun_socket_notifier *notifier;
+	int fd;
 	time_t time;
 } peer_info_t;
 
@@ -80,6 +80,7 @@ public:
 	//configuration
 	std::string tap_name;
 	std::string ip4_config;
+	std::string protocol;
 	std::vector<std::string> server_addr;
 	std::vector<std::string> peer_addr;
 
@@ -100,5 +101,7 @@ public:
 	void add_peer_info(int fd, tun_socket_notifier *notifier, std::string host);
 	void remove_peer_info(int fd);
 	bool find_peer_host(std::string host);
+	tun_socket_notifier *get_notifier(int fd);
+	std::string get_host(int fd);
 };
 #endif //_SETTINGS_H

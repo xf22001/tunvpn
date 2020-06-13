@@ -6,7 +6,7 @@
  *   文件名称：request.cpp
  *   创 建 者：肖飞
  *   创建日期：2020年02月16日 星期日 11时05分58秒
- *   修改日期：2020年06月11日 星期四 16时36分24秒
+ *   修改日期：2020年06月13日 星期六 11时22分44秒
  *   描    述：
  *
  *================================================================*/
@@ -63,7 +63,6 @@ void request_decode(char *buffer, int size, char **prequest, int *request_size)
 
 	if(request->header.data_size > payload_size) {//还要收
 		//l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
-		l->printf("size > payload_size invalid!\n");
 		*prequest = (char *)request;
 		return;
 	}

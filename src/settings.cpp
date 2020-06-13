@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2020年06月12日 星期五 11时41分03秒
+ *   修改日期：2020年06月13日 星期六 13时59分01秒
  *   描    述：
  *
  *================================================================*/
@@ -123,6 +123,12 @@ int settings::get_app_settings_from_configuration(configure &cfg)
 		ip4_config = values.at(0);
 	}
 
+	values = cfg.get("app", "protocol");
+
+	if(values.size() > 0) {
+		protocol = values.at(0);
+	}
+
 	values = cfg.get("app", "server_addr");
 
 	if(values.size() > 0) {
@@ -213,4 +219,30 @@ bool settings::find_peer_host(std::string host)
 	}
 
 	return find_host;
+}
+
+tun_socket_notifier *settings::get_notifier(int fd)
+{
+	tun_socket_notifier *notifier = NULL;
+	std::map<int, tun_socket_notifier *>::iterator it;
+	it = map_notifier.find(fd);
+
+	if(it != map_notifier.end()) {
+		notifier = it->second;
+	}
+
+	return notifier;
+}
+
+std::string settings::get_host(int fd)
+{
+	std::string host = NULL;
+	std::map<int, std::string>::iterator it;
+	it = map_host.find(fd);
+
+	if(it != map_host.end()) {
+		host = it->second;
+	}
+
+	return host;
 }
