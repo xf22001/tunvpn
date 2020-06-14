@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年06月13日 星期六 16时18分35秒
+ *   修改日期：2020年06月14日 星期日 10时47分32秒
  *   描    述：
  *
  *================================================================*/
@@ -68,7 +68,6 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 				ret = 0;
 			} else if(ret > 0) {
 				//l->printf("%8s %d bytes from %s\n", "received", ret, m_address_string.c_str());
-				decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 				rx_buffer_received += ret;
 				process_message();
 				ret = 0;
@@ -114,17 +113,17 @@ void socket_server_client_notifier::reply_tun_info()
 int socket_server_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
 	int ret = -1;
-	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	ret = write(m_fd, request, size);
 
 	if(ret > 0) {
-		//std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+		//std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
 		//l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	} else {
-		std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+		std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
 		l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
 	}
@@ -209,7 +208,6 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 						ret = 0;
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, client_address.c_str());
-						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 						//l->dump((const char *)rx_buffer, ret);
 						//ret = sendto(fd, rx_buffer, ret, 0,  address,  *address_size);
 
@@ -241,10 +239,9 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 int socket_server_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
 	int ret = -1;
-	std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
-
-	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
+	std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
 	switch(m_s->get_type()) {
 		case SOCK_STREAM: {

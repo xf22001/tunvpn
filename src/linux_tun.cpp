@@ -6,7 +6,7 @@
  *   文件名称：linux_tun.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 11时21分13秒
- *   修改日期：2019年12月04日 星期三 09时28分44秒
+ *   修改日期：2020年06月14日 星期日 15时26分58秒
  *   描    述：
  *
  *================================================================*/
@@ -122,6 +122,7 @@ int linux_tun::update_tun_info()
 
 
 	ifr.ifr_mtu = 1300;
+	//ifr.ifr_mtu = 1500;
 	ret = tun_ioctl(sockfd, SIOCSIFMTU);
 	if(ret < 0) {
 		l->printf("ioctl %s failed!(%s)\n", "SIOCSIFMTU", strerror(errno));

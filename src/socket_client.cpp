@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年06月13日 星期六 16时14分54秒
+ *   修改日期：2020年06月14日 星期日 10时12分08秒
  *   描    述：
  *
  *================================================================*/
@@ -61,7 +61,6 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
 						//l->dump((const char *)buffer, ret);
-						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 						rx_buffer_received += ret;
 						process_message();
 						update_time = time(NULL);
@@ -80,7 +79,6 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
 						//l->dump((const char *)buffer, ret);
-						decrypt_request((unsigned char *)(rx_buffer + rx_buffer_received), ret, (unsigned char *)(rx_buffer + rx_buffer_received), &ret);
 						rx_buffer_received += ret;
 						process_message();
 						update_time = time(NULL);
@@ -103,9 +101,9 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 int socket_client_notifier::send_request(char *request, int size, struct sockaddr *address, socklen_t address_size)
 {
 	util_log *l = util_log::get_instance();
+	settings *settings = settings::get_instance();
 	char buffer[32];
 	int ret = -1;
-	encrypt_request((unsigned char *)request, size, (unsigned char *)request, &size);
 
 	switch(m_c->get_type()) {
 		case SOCK_STREAM: {
@@ -123,10 +121,10 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 	}
 
 	if(ret > 0) {
-		//std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+		//std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 		//l->printf("%8s %d bytes to %s\n", "send", ret, address_string.c_str());
 	} else {
-		std::string address_string = net_base.get_address_string(get_domain(), address, &address_size);
+		std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
 		l->printf("sendto %s %s\n", buffer, address_string.c_str(), strerror(errno));
 		ret = -1;

@@ -6,7 +6,7 @@
  *   文件名称：settings.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时05分13秒
- *   修改日期：2020年06月13日 星期六 13时59分01秒
+ *   修改日期：2020年06月14日 星期日 10时08分27秒
  *   描    述：
  *
  *================================================================*/
@@ -245,4 +245,9 @@ std::string settings::get_host(int fd)
 	}
 
 	return host;
+}
+
+std::string settings::get_address_string(int domain, struct sockaddr *address, socklen_t *address_size)
+{
+	return net_base.get_address_string(domain, address, address_size);
 }

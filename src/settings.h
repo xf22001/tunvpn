@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年06月13日 星期六 15时13分02秒
+ *   修改日期：2020年06月14日 星期日 10时07分26秒
  *   描    述：
  *
  *================================================================*/
@@ -30,6 +30,7 @@ extern "C"
 #include "linux_tun.h"
 #include "tun_socket_notifier.h"
 #include "lock.h"
+#include "net/net_base.h"
 
 #define CLIENT_VALIDE_TIMEOUT 15
 
@@ -74,6 +75,7 @@ public:
 
 	int get_app_settings_from_configuration(configure &cfg);
 	int check_configuration();
+	class net_base net_base;
 public:
 	static settings *get_instance();
 
@@ -103,5 +105,6 @@ public:
 	bool find_peer_host(std::string host);
 	tun_socket_notifier *get_notifier(int fd);
 	std::string get_host(int fd);
+	std::string get_address_string(int domain, struct sockaddr *address, socklen_t *address_size);
 };
 #endif //_SETTINGS_H

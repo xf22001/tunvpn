@@ -6,7 +6,7 @@
  *   文件名称：console.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月02日 星期一 12时49分52秒
- *   修改日期：2020年06月12日 星期五 11时19分55秒
+ *   修改日期：2020年06月14日 星期日 15时22分06秒
  *   描    述：
  *
  *================================================================*/
@@ -81,7 +81,7 @@ void input_notifier::process_message(int size)
 					remote_addr = it->first;
 					peer_info = &it->second;
 
-					address_string_remote = net_base.get_address_string(remote_addr.domain, (struct sockaddr *)&remote_addr.address, &remote_addr.address_size);
+					address_string_remote = settings->get_address_string(remote_addr.domain, (struct sockaddr *)&remote_addr.address, &remote_addr.address_size);
 					memset(address_buffer_peer, 0, sizeof(address_buffer_peer));
 					sin = (struct sockaddr_in *)&peer_info->tun_info.ip;
 					inet_ntop(AF_INET, &sin->sin_addr, address_buffer_peer, sizeof(address_buffer_peer));
