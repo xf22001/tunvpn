@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年06月13日 星期六 15时32分35秒
+ *   修改日期：2020年06月21日 星期日 16时59分34秒
  *   描    述：
  *
  *================================================================*/
@@ -66,7 +66,8 @@ static void start_peer_client(trans_protocol_type_t protocol)
 		bool find_host = false;
 
 		std::vector<std::string> matched_list;
-		std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+		//std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+		std::string pattern = "^([^ ]+) ([0-9]+)$";
 		regexp r;
 
 		matched_list = r.match(ip_port, pattern);
@@ -153,7 +154,8 @@ int start_tun()
 			std::string host;
 			std::string port;
 			std::vector<std::string> matched_list;
-			std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+			//std::string pattern = "^([^\\:]+)\\:([0-9]+)$";
+			std::string pattern = "^([^ ]+) ([0-9]+)$";
 			regexp r;
 
 			matched_list = r.match(ip_port, pattern);
