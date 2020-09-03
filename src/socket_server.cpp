@@ -6,7 +6,7 @@
  *   文件名称：socket_server.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 11时48分19秒
- *   修改日期：2020年06月14日 星期日 10时47分32秒
+ *   修改日期：2020年09月03日 星期四 10时44分32秒
  *   描    述：
  *
  *================================================================*/
@@ -18,6 +18,7 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "main.h"
 
 socket_server_client_notifier::socket_server_client_notifier(int domain, struct sockaddr *address, socklen_t *address_size, std::string client_address, int fd, unsigned int events) : tun_socket_notifier(fd, events)
 {
@@ -31,7 +32,7 @@ socket_server_client_notifier::socket_server_client_notifier(int domain, struct 
 	memset(&m_address, 0, sizeof(m_address));
 	memcpy(&m_address, address, m_address_size);
 
-	add_loop();
+	add_loop(get_event_loop());
 }
 
 socket_server_client_notifier::~socket_server_client_notifier()
@@ -71,6 +72,8 @@ int socket_server_client_notifier::handle_event(int fd, unsigned int events)
 				rx_buffer_received += ret;
 				process_message();
 				ret = 0;
+			} else {
+				l->printf("read %s error %d(%s)\n", m_address_string.c_str(), ret, strerror(errno));
 			}
 		}
 	}
@@ -125,7 +128,7 @@ int socket_server_client_notifier::send_request(char *request, int size, struct 
 	} else {
 		std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
-		l->printf("sendto %s %s\n", address_string.c_str(), strerror(errno));
+		l->printf("sendto %s error %d(%s)\n", address_string.c_str(), ret, strerror(errno));
 	}
 
 	return ret;
@@ -138,7 +141,7 @@ socket_server_notifier::socket_server_notifier(server *s, unsigned int events) :
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
 	m_s = s;
-	add_loop();
+	add_loop(get_event_loop());
 
 	set_timeout(1, 0);
 }
@@ -222,6 +225,8 @@ int socket_server_notifier::handle_event(int fd, unsigned int events)
 						process_message();
 
 						ret = 0;
+					} else {
+						l->printf("recvfrom %s error %d(%s)\n", client_address.c_str(), ret, strerror(errno));
 					}
 				}
 				break;

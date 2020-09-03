@@ -6,7 +6,7 @@
  *   文件名称：socket_client.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月29日 星期五 14时02分31秒
- *   修改日期：2020年06月14日 星期日 10时12分08秒
+ *   修改日期：2020年09月03日 星期四 10时44分59秒
  *   描    述：
  *
  *================================================================*/
@@ -16,6 +16,7 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "main.h"
 
 socket_client_notifier::socket_client_notifier(client *c, unsigned int events) : tun_socket_notifier(c->get_fd(), events)
 {
@@ -23,7 +24,7 @@ socket_client_notifier::socket_client_notifier(client *c, unsigned int events) :
 	l->printf("%s:%s:%d\n", __FILE__, __PRETTY_FUNCTION__, __LINE__);
 	m_c = c;
 	update_time = time(NULL);
-	add_loop();
+	add_loop(get_event_loop());
 	set_timeout(1, 0);
 }
 
@@ -60,13 +61,12 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 						ret = 0;
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
-						//l->dump((const char *)buffer, ret);
 						rx_buffer_received += ret;
 						process_message();
 						update_time = time(NULL);
 						ret = 0;
 					} else {
-						l->printf("read %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
+						l->printf("read %s error %d(%s)\n", m_c->get_server_address_string().c_str(), ret, strerror(errno));
 					}
 				}
 				break;
@@ -78,13 +78,12 @@ int socket_client_notifier::handle_event(int fd, unsigned int events)
 						l->printf("client read no data, may be server %s closed!\n", m_c->get_server_address_string().c_str());
 					} else if(ret > 0) {
 						//l->printf("%8s %d bytes from %s\n", "received", ret, m_c->get_server_address_string().c_str());
-						//l->dump((const char *)buffer, ret);
 						rx_buffer_received += ret;
 						process_message();
 						update_time = time(NULL);
 						ret = 0;
 					} else {
-						l->printf("recvfrom %s %s\n", m_c->get_server_address_string().c_str(), strerror(errno));
+						l->printf("recvfrom %s error %d(%s)\n", m_c->get_server_address_string().c_str(), ret, strerror(errno));
 					}
 				}
 				break;
@@ -102,7 +101,6 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 {
 	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
-	char buffer[32];
 	int ret = -1;
 
 	switch(m_c->get_type()) {
@@ -126,7 +124,7 @@ int socket_client_notifier::send_request(char *request, int size, struct sockadd
 	} else {
 		std::string address_string = settings->get_address_string(get_domain(), address, &address_size);
 
-		l->printf("sendto %s %s\n", buffer, address_string.c_str(), strerror(errno));
+		l->printf("sendto %s error %d(%s)\n", address_string.c_str(), ret, strerror(errno));
 		ret = -1;
 	}
 

@@ -6,7 +6,7 @@
  *   文件名称：main.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 10时49分25秒
- *   修改日期：2020年06月21日 星期日 16时59分34秒
+ *   修改日期：2020年09月03日 星期四 12时00分54秒
  *   描    述：
  *
  *================================================================*/
@@ -25,6 +25,16 @@
 #include "console.h"
 #include "regexp/regexp.h"
 
+static event_loop *event_loop_instance = NULL;
+event_loop *get_event_loop()
+{
+	if(event_loop_instance == NULL) {
+		event_loop_instance = new event_loop(poll_type_poll);
+	}
+
+	return event_loop_instance;
+}
+
 loop_thread::loop_thread()
 {
 }
@@ -35,7 +45,7 @@ loop_thread::~loop_thread()
 
 void loop_thread::func()
 {
-	event_loop *loop = event_loop::get_instance();
+	event_loop *loop = get_event_loop();
 	loop->loop();
 }
 
@@ -191,10 +201,13 @@ int main(int argc, char **argv)
 {
 	int ret = 0;
 	std::string tap_name = "tunvpn";
-	//util_log *l = util_log::get_instance();
+	util_log *l = util_log::get_instance();
 	settings *settings = settings::get_instance();
+	event_loop *loop = get_event_loop();
 
 	loop_thread *th = new loop_thread;
+
+	l->printf("loop:%p\n", loop);
 
 	/* Catch Signal Handler SIGPIPE */
 	signal(SIGPIPE, signal_callback_handler);

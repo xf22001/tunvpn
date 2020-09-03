@@ -6,7 +6,7 @@
  *   文件名称：console.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月02日 星期一 12时49分52秒
- *   修改日期：2020年06月14日 星期日 15时22分06秒
+ *   修改日期：2020年09月03日 星期四 10时45分21秒
  *   描    述：
  *
  *================================================================*/
@@ -17,10 +17,11 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "main.h"
 
 input_notifier::input_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
-	add_loop();
+	add_loop(get_event_loop());
 }
 
 input_notifier::~input_notifier()

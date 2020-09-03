@@ -6,7 +6,7 @@
  *   文件名称：tap_notifier.cpp
  *   创 建 者：肖飞
  *   创建日期：2019年12月01日 星期日 09时29分18秒
- *   修改日期：2020年06月13日 星期六 13时59分35秒
+ *   修改日期：2020年09月03日 星期四 10时44分04秒
  *   描    述：
  *
  *================================================================*/
@@ -20,10 +20,11 @@
 
 #include "util_log.h"
 #include "settings.h"
+#include "main.h"
 
 tap_notifier::tap_notifier(int fd, unsigned int events) : event_notifier(fd, events)
 {
-	add_loop();
+	add_loop(get_event_loop());
 }
 
 tap_notifier::~tap_notifier()
