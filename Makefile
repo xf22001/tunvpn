@@ -6,7 +6,7 @@
 #   文件名称：Makefile
 #   创 建 者：肖飞
 #   创建日期：2019年05月21日 星期二 22时58分53秒
-#   修改日期：2020年06月14日 星期日 14时51分38秒
+#   修改日期：2020年09月04日 星期五 09时22分47秒
 #   描    述：
 #
 #================================================================
@@ -50,10 +50,14 @@ LOCAL_LDFLAGS += -L$(top)/c/utils/out/lib
 endif
 LOCAL_LDFLAGS += -lcrypto -lssl -lz
 LOCAL_LDFLAGS += -pthread -lrt
-LOCAL_LDFLAGS +=  -Wl,-Bstatic -lxiaofei -Wl,-Bdynamic
+#LOCAL_LDFLAGS +=  -Wl,-Bstatic -lxiaofei -Wl,-Bdynamic
+LOCAL_LDFLAGS +=  -static -lxiaofei
 LOCAL_LDFLAGS += -Wl,-Map=$(out_dir)/$(app_name).map
 ifneq ($(PI),)
-LOCAL_DEPS := xiaofei/libssl1.0.0_1.0.1t-1+deb8u12_armhf.deb xiaofei/libc6_2.24-11+deb9u4_armhf.deb xiaofei/libssl-dev_1.0.1t-1+deb8u12_armhf.deb xiaofei/zlib1g-dev_1.2.8.dfsg-5_armhf.deb xiaofei/libc6-dev_2.24-11+deb9u4_armhf.deb
+LOCAL_DEPS += xiaofei/libssl-dev_1.1.1d-0+deb10u3+rpt1_armhf.deb
+LOCAL_DEPS += xiaofei/zlib1g-dev_1.2.11.dfsg-1_armhf.deb
+LOCAL_DEPS += xiaofei/libc6-dev_2.28-10+rpi1_armhf.deb
+LOCAL_DEPS += xiaofei/libc6_2.28-10+rpi1_armhf.deb
 $(LOCAL_DEPS) : 
 	$(error "missing $@")
 endif
