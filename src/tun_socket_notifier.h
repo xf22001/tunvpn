@@ -6,7 +6,7 @@
  *   文件名称：tun_socket_notifier.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月30日 星期六 22时08分15秒
- *   修改日期：2020年06月14日 星期日 16时04分05秒
+ *   修改日期：2021年08月18日 星期三 22时37分06秒
  *   描    述：
  *
  *================================================================*/
@@ -17,13 +17,13 @@ extern "C"
 {
 #endif
 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/un.h>
-
 #ifdef __cplusplus
 }
 #endif
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/un.h>
 
 #include <queue>
 

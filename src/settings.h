@@ -6,7 +6,7 @@
  *   文件名称：settings.h
  *   创 建 者：肖飞
  *   创建日期：2019年11月28日 星期四 17时02分11秒
- *   修改日期：2020年06月14日 星期日 10时07分26秒
+ *   修改日期：2021年08月18日 星期三 22时32分01秒
  *   描    述：
  *
  *================================================================*/
@@ -17,14 +17,14 @@ extern "C"
 {
 #endif
 
+#ifdef __cplusplus
+}
+#endif
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <time.h>
-
-#ifdef __cplusplus
-}
-#endif
 
 #include "configure/configure.h"
 #include "linux_tun.h"
